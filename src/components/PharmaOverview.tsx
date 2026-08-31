@@ -119,31 +119,6 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
               منظومة الرصد والتوريد الصيدلاني الموحدة في اليمن. تنظيم إشارات العرض والطلب، تدوير الفائض، وتأمين الاحتياجات العلاجية والتجميلية.
             </p>
-
-            {/* Quick Entity Switcher Bar for immediate access */}
-            <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
-              <span className="text-slate-400 text-[11px] font-semibold">التبديل السريع للهوية:</span>
-              {entitiesList.slice(0, 4).map((entItem) => (
-                <button
-                  key={entItem.id}
-                  onClick={() => onSelectEntity && onSelectEntity(entItem)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer border ${
-                    entItem.id === entity.id || entItem.name === entity.name
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
-                      : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-800'
-                  }`}
-                >
-                  <Building2 className="w-3 h-3" />
-                  <span>{entItem.name}</span>
-                </button>
-              ))}
-              <button
-                onClick={() => onNavigateTab('entities')}
-                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-950 text-teal-300 border border-teal-500/50 hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer"
-              >
-                <span>كافة الجهات ({entitiesList.length}) ←</span>
-              </button>
-            </div>
           </div>
         </div>
 
@@ -165,47 +140,54 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
         </div>
       </div>
 
-      {/* Early Warning Shortage Intelligence Banner */}
+      {/* Early Warning Shortage Intelligence Banner - High Contrast & Clean Styling */}
       {INITIAL_EARLY_WARNING_ALERTS && INITIAL_EARLY_WARNING_ALERTS.length > 0 && (
-        <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/40 text-rose-100 shadow-sm space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="p-1 rounded-lg bg-rose-500/20 text-rose-400">
-                <Flame className="w-4 h-4" />
+        <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-rose-200 dark:border-rose-900/60 shadow-xs space-y-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="p-2 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400">
+                <Flame className="w-5 h-5" />
               </span>
-              <h4 className="text-xs sm:text-sm font-bold text-rose-200">
-                رادار الإنذار المبكر للأدوية الحرجة (Early Warning Shortage Radar)
-              </h4>
+              <div>
+                <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-rose-100">
+                  رادار الإنذار المبكر للأدوية الحرجة
+                </h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                  Early Warning Shortage Radar — رصد مؤشرات الشح المتكرر
+                </p>
+              </div>
             </div>
-            <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+            <span className="text-xs bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 px-3 py-1 rounded-full font-bold border border-rose-200 dark:border-rose-800">
               إشارات طلب متكررة خلال 48 ساعة
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
             {INITIAL_EARLY_WARNING_ALERTS.map((alert) => (
               <div
                 key={alert.id}
-                className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-start justify-between gap-3 text-xs"
+                className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 flex items-start justify-between gap-3 text-xs shadow-xs hover:border-rose-300 dark:hover:border-rose-500/50 transition"
               >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-white">{alert.drugName}</span>
-                    <span className="text-[10px] px-1.5 py-0.2 bg-rose-500/20 text-rose-300 rounded font-semibold">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-black text-slate-900 dark:text-white text-sm">
+                      {alert.drugName}
+                    </span>
+                    <span className="text-[11px] px-2 py-0.5 bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 rounded-md font-bold">
                       {alert.governorate}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-snug">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
                     {alert.estimatedPatientNeed}
                   </p>
-                  <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                  <div className="text-xs text-emerald-800 dark:text-emerald-300 font-bold flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800/60">
+                    <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>الإجراء: {alert.recommendedAction}</span>
-                  </p>
+                  </div>
                 </div>
-                <div className="text-center shrink-0">
-                  <div className="text-base font-black text-rose-400">+{alert.requestsCountIn48h}</div>
-                  <div className="text-[9px] text-slate-400">طلبات عاجلة</div>
+                <div className="text-center shrink-0 bg-white dark:bg-slate-900 p-2.5 rounded-xl border border-rose-100 dark:border-rose-900/40 min-w-[70px]">
+                  <div className="text-xl font-black text-rose-600 dark:text-rose-400">+{alert.requestsCountIn48h}</div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">طلبات عاجلة</div>
                 </div>
               </div>
             ))}
