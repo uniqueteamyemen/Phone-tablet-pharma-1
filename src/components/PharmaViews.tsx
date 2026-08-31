@@ -679,6 +679,7 @@ export const PharmaMatchesView: React.FC<PharmaMatchesViewProps> = ({
   requests = [],
 }) => {
   const [selectedMatch, setSelectedMatch] = useState<PharmaMatch | null>(null);
+  const [isInterestConfirmed, setIsInterestConfirmed] = useState(false);
 
   // PRIVACY FILTER:
   // - If userRole === 'admin': Super Admin sees ALL matches across Yemen.
@@ -919,7 +920,10 @@ export const PharmaMatchesView: React.FC<PharmaMatchesViewProps> = ({
                   تم الرصد: {new Date(match.createdAt).toLocaleTimeString('ar-YE', { hour: '2-digit', minute: '2-digit' })}
                 </span>
                 <button
-                  onClick={() => setSelectedMatch(match)}
+                  onClick={() => {
+                    setSelectedMatch(match);
+                    setIsInterestConfirmed(false);
+                  }}
                   className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm"
                 >
                   <Phone className="w-3.5 h-3.5" />
@@ -931,17 +935,20 @@ export const PharmaMatchesView: React.FC<PharmaMatchesViewProps> = ({
         )}
       </div>
 
-      {/* Coordinate Modal */}
+      {/* Coordinate Modal with Privacy Protection & WhatsApp/Call Connect */}
       {selectedMatch && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl space-y-4 text-slate-100">
+          <div className="bg-slate-900 max-w-md w-full rounded-2xl p-6 border border-slate-800 shadow-2xl space-y-4 text-slate-100 animate-in fade-in-50">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="font-bold text-white flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-400" />
                 تنسيق ربط العرض والطلب
               </h3>
               <button
-                onClick={() => setSelectedMatch(null)}
+                onClick={() => {
+                  setSelectedMatch(null);
+                  setIsInterestConfirmed(false);
+                }}
                 className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer"
               >
                 ✕
@@ -949,29 +956,97 @@ export const PharmaMatchesView: React.FC<PharmaMatchesViewProps> = ({
             </div>
 
             <div className="space-y-3 text-xs text-slate-300">
-              <p>
-                تمت المطابقة بنجاح للصنف: <strong className="text-white uppercase">{selectedMatch.drugName}</strong>
-              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">الصنف المتطابق:</span>
+                <span className="font-bold text-white uppercase">{selectedMatch.drugName}</span>
+              </div>
+
+              {/* Match Parties Box */}
               <div className="bg-emerald-950/40 p-3.5 rounded-xl border border-emerald-500/20 space-y-2">
-                <div>
-                  <span className="text-slate-400 block text-[11px]">الطرف الأول (العارض):</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-[11px]">الطرف الأول (العارض):</span>
                   <span className="font-bold text-white">{selectedMatch.offeringEntity}</span>
                 </div>
-                <div>
-                  <span className="text-slate-400 block text-[11px]">الطرف الثاني (الطالب):</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-[11px]">الطرف الثاني (الطالب):</span>
                   <span className="font-bold text-white">{selectedMatch.requestingEntity}</span>
                 </div>
+                <div className="flex justify-between items-center pt-1 border-t border-emerald-500/20 text-[11px]">
+                  <span className="text-slate-400">الكمية المقترحة للتبادل:</span>
+                  <span className="font-bold text-emerald-300">
+                    {Math.min(selectedMatch.offerQuantity, selectedMatch.requestQuantity)} وحدة
+                  </span>
+                </div>
               </div>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                📌 تتيح المنصة تبادل إشارات التوفر وتوثيق حركة السوق الدوائي بين المنشآت الصحية المرخصة في اليمن. يتم التنسيق المباشر بين مسؤولي التوريد لإتمام إجراءات الاستلام والتسليم المعتمدة نظاماً.
-              </p>
+
+              {/* Privacy Step 1: Explicit Interest Confirmation */}
+              {!isInterestConfirmed ? (
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-2.5">
+                  <div className="flex items-start gap-2 text-amber-300 text-[11px] leading-relaxed">
+                    <Lock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                    <span>
+                      <strong>حماية الخصوصية:</strong> لضمان جدية التنسيق وعدم الإزعاج، لا يتم كشف أرقام الهواتف أو فتح قنوات الاتصال المباشر إلا بعد تأكيد اهتمامك بهذه المطابقة.
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setIsInterestConfirmed(true)}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>أنا مهتم بهذه المطابقة / تفعيل بيانات التواصل</span>
+                  </button>
+                </div>
+              ) : (
+                /* Privacy Step 2: Unlocked Channels (WhatsApp & Direct Call) */
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-emerald-500/40 space-y-3 animate-in fade-in-50">
+                  <div className="flex items-center gap-1.5 text-emerald-400 font-bold text-xs">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>تم تفعيل قناة التنسيق المباشر بنجاح</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    {/* WhatsApp Action */}
+                    <a
+                      href={`https://wa.me/967770000000?text=${encodeURIComponent(
+                        `السلام عليكم، بخصوص مطابقة دواء (${selectedMatch.drugName}) عبر منصة PharmaYemen:\nالكمية: ${Math.min(
+                          selectedMatch.offerQuantity,
+                          selectedMatch.requestQuantity
+                        )}\nالمرجع: #${selectedMatch.id.slice(0, 8)}\nنود التنسيق المباشر معكم لإتمام الاستلام والتسليم.`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="py-2.5 px-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition text-center shadow"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>واتساب مباشر</span>
+                    </a>
+
+                    {/* Direct Call Action */}
+                    <a
+                      href="tel:+967770000000"
+                      className="py-2.5 px-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition text-center border border-slate-700"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>اتصال هاتفي</span>
+                    </a>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 leading-snug">
+                    📌 يتم التنسيق المباشر بين الطرفين وتوثيق الفواتير وسندات التسليم الرسمية بمسؤوليتهما وفق لوائح وزارة الصحة.
+                  </p>
+                </div>
+              )}
             </div>
 
             <button
-              onClick={() => setSelectedMatch(null)}
-              className="w-full py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-xs shadow hover:bg-emerald-500 transition cursor-pointer"
+              onClick={() => {
+                setSelectedMatch(null);
+                setIsInterestConfirmed(false);
+              }}
+              className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl font-semibold text-xs transition cursor-pointer"
             >
-              تم استعراض بيانات التنسيق
+              إغلاق النافذة
             </button>
           </div>
         </div>

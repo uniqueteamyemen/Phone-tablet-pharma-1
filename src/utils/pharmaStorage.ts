@@ -1,15 +1,24 @@
-import { PharmaEntity, PharmaOffer, PharmaRequest, PharmaMatch, PharmaCatalogDrug, INITIAL_NEML_CATALOG } from '../types/pharmayemen';
+import { 
+  PharmaEntity, 
+  PharmaOffer, 
+  PharmaRequest, 
+  PharmaMatch, 
+  PharmaCatalogDrug, 
+  INITIAL_NEML_CATALOG,
+  DeliveryCourierPartner,
+  EarlyWarningShortageAlert
+} from '../types/pharmayemen';
 import { getMedicineSearchMatch, rankMedicinesBySearch, normalizeMedicineSearch } from '../medicineSearch';
 import { evaluateClinicalDrugMatch } from './pharmaClinicalMatcher';
 
 const ENTITY_STORAGE_KEY = 'pharmayemen_entity_v1';
-const ENTITIES_LIST_STORAGE_KEY = 'pharmayemen_entities_list_v2';
-const OFFERS_STORAGE_KEY = 'pharmayemen_offers_v1';
-const REQUESTS_STORAGE_KEY = 'pharmayemen_requests_v1';
+const ENTITIES_LIST_STORAGE_KEY = 'pharmayemen_entities_list_v3';
+const OFFERS_STORAGE_KEY = 'pharmayemen_offers_v3';
+const REQUESTS_STORAGE_KEY = 'pharmayemen_requests_v3';
 const MATCHES_STORAGE_KEY = 'pharmayemen_matches_v1';
 const CUSTOM_DRUGS_STORAGE_KEY = 'pharmayemen_custom_drugs_v1';
 
-// Initial Demo Entities list (User can add their own pharmacy, hospital or warehouse anytime)
+// Initial Demo Entities list with Trust Scores & Ratings
 export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
   {
     id: 'ent-101',
@@ -21,6 +30,9 @@ export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
     address: 'شارع الزبيري - جولة كنتاكي',
     phone: '+967 777 123 456',
     status: 'verified',
+    trustScore: 98,
+    successfulMatchesCount: 19,
+    rating: 4.9,
     subscriptionPlan: 'pro',
     createdAt: new Date().toISOString(),
   },
@@ -34,6 +46,9 @@ export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
     address: 'شارع التسعين - قرب مجمع الشفاء',
     phone: '+967 733 987 654',
     status: 'verified',
+    trustScore: 95,
+    successfulMatchesCount: 34,
+    rating: 4.8,
     subscriptionPlan: 'pro',
     createdAt: new Date().toISOString(),
   },
@@ -47,6 +62,9 @@ export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
     address: 'شارع جمال - مقابل مستشفى الثورة',
     phone: '+967 711 456 789',
     status: 'verified',
+    trustScore: 92,
+    successfulMatchesCount: 11,
+    rating: 4.7,
     subscriptionPlan: 'free',
     createdAt: new Date().toISOString(),
   },
@@ -60,8 +78,101 @@ export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
     address: 'حي الثورة',
     phone: '+967 04 221 000',
     status: 'verified',
+    trustScore: 99,
+    successfulMatchesCount: 52,
+    rating: 5.0,
+    subscriptionPlan: 'enterprise',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'ent-105',
+    name: 'مؤسسة يمن كير للأجهزة والمستلزمات الطبية',
+    type: 'wholesaler',
+    licenseNumber: 'YE-SAN-MED-550',
+    governorate: 'صنعاء',
+    city: 'حدة',
+    address: 'شارع حدة - تقاطع الرويشان',
+    phone: '+967 775 554 433',
+    status: 'verified',
+    trustScore: 96,
+    successfulMatchesCount: 23,
+    rating: 4.9,
     subscriptionPlan: 'pro',
     createdAt: new Date().toISOString(),
+  }
+];
+
+// Verified Shipping / Courier Partners for Inter-city Drug Transits
+export const INITIAL_DELIVERY_PARTNERS: DeliveryCourierPartner[] = [
+  {
+    id: 'dlv-1',
+    name: 'المسرع الطبي للشحن الدوائي المبرد (PharmaExpress)',
+    coverageGovernorates: ['صنعاء', 'عدن', 'تعز', 'إب', 'الحديدة', 'حضرموت'],
+    phone: '+967 778 880 011',
+    whatsapp: '967778880011',
+    rating: 4.9,
+    deliverySpeed: 'نفس اليوم / خلال 24 ساعة (صناديق مبردة 2-8°C)',
+    isVerified: true,
+    notes: 'متخصص بنقل أدوية الأورام، الإنسولين، واللقاحات الحساسة للحرارة.',
+  },
+  {
+    id: 'dlv-2',
+    name: 'الأمانة للنقل السريع بين المدن',
+    coverageGovernorates: ['صنعاء', 'عمران', 'ذمار', 'إب', 'تعز'],
+    phone: '+967 733 445 566',
+    whatsapp: '967733445566',
+    rating: 4.7,
+    deliverySpeed: 'خلال 4-12 ساعة',
+    isVerified: true,
+    notes: 'شحن مستلزمات طبية، أجهزة تشخيص، ولاصقات السكر.',
+  },
+  {
+    id: 'dlv-3',
+    name: 'ساعي حضرموت وعدن اللوجستي',
+    coverageGovernorates: ['عدن', 'المكلا', 'سيئون', 'شبوة', 'المهرة'],
+    phone: '+967 711 223 344',
+    whatsapp: '967711223344',
+    rating: 4.8,
+    deliverySpeed: 'خلال 24-48 ساعة',
+    isVerified: true,
+    notes: 'تغطية واسعة للمحافظات الشرقية والجنوبية مع إمكانية التوصيل لباب الصيدلية.',
+  }
+];
+
+// Emergency Early Warning Shortage Alerts (Red Alert Zone)
+export const INITIAL_EARLY_WARNING_ALERTS: EarlyWarningShortageAlert[] = [
+  {
+    id: 'alert-red-1',
+    drugName: 'Trastuzumab 440mg (Herceptin) فيال حقن أورام',
+    genericName: 'Trastuzumab',
+    governorate: 'تعز',
+    requestsCountIn48h: 4,
+    criticality: 'red_alert',
+    estimatedPatientNeed: 'أكثر من 8 مرضى أورام بحاجة عاجلة للجرعة الأسبوعية',
+    recommendedAction: 'تنبيه عاجل لكافة وكلاء ومستوردي أدوية الأورام في صنعاء وعدن لتوجيه إرسالية استثنائية لتعز فوراً.',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+  },
+  {
+    id: 'alert-red-2',
+    drugName: 'FreeStyle Libre 2 Sensors (لاصقات قياس السكر المستمر)',
+    genericName: 'Continuous Glucose Monitor Sensor',
+    governorate: 'صنعاء',
+    requestsCountIn48h: 5,
+    criticality: 'high_warning',
+    estimatedPatientNeed: 'شح شديد لدى مرضى السكري من النوع الأول والأطفال',
+    recommendedAction: 'تنبيه موزعي المستلزمات الطبية بتوفير شحنات إضافية مع التحقق من تواريخ الصلاحية.',
+    createdAt: new Date(Date.now() - 3600000 * 7).toISOString(),
+  },
+  {
+    id: 'alert-red-3',
+    drugName: 'Albumin Human 20% 50ml / 100ml Infusion',
+    genericName: 'Albumin Human',
+    governorate: 'عدن',
+    requestsCountIn48h: 3,
+    criticality: 'red_alert',
+    estimatedPatientNeed: 'عجز في أقسام العناية المركزة والغسيل الكلوي',
+    recommendedAction: 'تنسيق فائض المستشفيات الخاصة مع مستشفيات الطوارئ العامة.',
+    createdAt: new Date(Date.now() - 3600000 * 10).toISOString(),
   }
 ];
 
@@ -107,7 +218,6 @@ export const loadPharmaEntity = (): PharmaEntity => {
 export const savePharmaEntity = (entity: PharmaEntity): void => {
   try {
     localStorage.setItem(ENTITY_STORAGE_KEY, JSON.stringify(entity));
-    // Also ensure it is present/updated in the full entities list
     const currentList = loadPharmaEntitiesList();
     const index = currentList.findIndex((e) => e.id === entity.id);
     if (index >= 0) {
@@ -121,7 +231,7 @@ export const savePharmaEntity = (entity: PharmaEntity): void => {
   }
 };
 
-// Initial Demo Offers (Market Supply signals)
+// Initial Demo Offers (Supply Signals including Non-Registered & Medical Devices)
 const INITIAL_OFFERS: PharmaOffer[] = [
   {
     id: 'off-1',
@@ -132,14 +242,18 @@ const INITIAL_OFFERS: PharmaOffer[] = [
     genericName: 'Amoxicillin + Clavulanic acid',
     brandName: 'Augmentin 1g / Klamentin',
     category: 'ANTI-INFECTIVE MEDICINES',
+    categoryType: 'medicine',
     quantity: 50,
     unit: 'باكت (Box)',
     price: 3200,
     currency: 'YER',
     batchNumber: 'BT-8841',
     expiryDate: '2027-06-30',
+    needsDelivery: true,
+    deliveryNotes: 'يمكن الشحن عبر المسرع الطبي لكافة المحافظات',
+    acknowledgedResponsibility: true,
     status: 'active',
-    notes: 'متوفر بكميات ممتازة من الوكيل مع خصم للكميات',
+    notes: 'متوفر بكميات ممتازة من الوكيل مع تخزين مثالي',
     createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
   },
   {
@@ -151,35 +265,79 @@ const INITIAL_OFFERS: PharmaOffer[] = [
     genericName: 'Paracetamol',
     brandName: 'Adol 500mg (Yedco / Shaphaco)',
     category: 'ANALGESICS, ANTIPYRETICS, NSAIDS',
+    categoryType: 'medicine',
     quantity: 200,
     unit: 'شريط (Strip)',
     price: 250,
     currency: 'YER',
     batchNumber: 'YD-2024',
     expiryDate: '2028-01-15',
+    acknowledgedResponsibility: true,
     status: 'active',
-    notes: 'منتج محلي يمني عالي الجودة',
+    notes: 'إنتاج محلي يمني عالي الجودة',
     createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
   },
   {
     id: 'off-3',
+    entityId: 'ent-105',
+    entityName: 'مؤسسة يمن كير للأجهزة والمستلزمات الطبية',
+    isFreeText: true,
+    freeTextName: 'FreeStyle Libre 2 Sensors (لاصقات قياس السكر بالذراع)',
+    brandName: 'Abbott FreeStyle Libre 2',
+    category: 'أجهزة ومستلزمات تشخيصية',
+    categoryType: 'diagnostic_tool',
+    quantity: 15,
+    unit: 'قطعة / لاصقة (Sensor)',
+    price: 45000,
+    currency: 'YER',
+    expiryDate: '2027-09-30',
+    needsDelivery: true,
+    acknowledgedResponsibility: true,
+    status: 'active',
+    notes: 'أصلية وارد وكالة، صالحة لمدة 14 يوماً لكل مجس وتعمل مع تطبيقات الهواتف الذكية.',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: 'off-4',
+    entityId: 'ent-101',
+    entityName: 'صيدلية النور الحديثة - صنعاء',
+    isFreeText: true,
+    freeTextName: 'Orlistat 120mg كبسولات دايت وتخسيس طبية',
+    brandName: 'Xenical / QuickSlim',
+    category: 'دايت ومكملات علاجية',
+    categoryType: 'diet_nutrition',
+    quantity: 25,
+    unit: 'باكت (Box)',
+    price: 6500,
+    currency: 'YER',
+    expiryDate: '2027-11-30',
+    acknowledgedResponsibility: true,
+    status: 'active',
+    notes: 'مرخصة وتعمل على تقليل امتصاص الدهون الغذائية.',
+    createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+  },
+  {
+    id: 'off-5',
     entityId: 'ent-103',
     entityName: 'صيدلية الأمل التخصصية - تعز',
     isFreeText: true,
-    freeTextName: 'Omeprazole 20mg Capsules',
-    category: 'GASTROINTESTINAL MEDICINES',
-    quantity: 80,
-    unit: 'باكت (Box)',
-    price: 1800,
+    freeTextName: 'سيروم نياسيناميد 10% + زنك 1% المعالج للبشرة وحب الشباب',
+    brandName: 'The Ordinary Niacinamide 10%',
+    category: 'عناية جلدية وتجميل علاجي',
+    categoryType: 'skincare_cosmetics',
+    quantity: 12,
+    unit: 'عبوة (Bottle 30ml)',
+    price: 7000,
     currency: 'YER',
-    expiryDate: '2026-11-30',
+    expiryDate: '2028-03-31',
+    acknowledgedResponsibility: true,
     status: 'active',
-    notes: 'تاريخ صلاحية مضمون',
-    createdAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+    notes: 'أصلي 100% مستورد من كندا، مناسب للبشرة المعرضة للحبوب والتصبغات.',
+    createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
   },
 ];
 
-// Initial Demo Requests (Market Demand signals)
+// Initial Demo Requests (Demand signals)
 const INITIAL_REQUESTS: PharmaRequest[] = [
   {
     id: 'req-1',
@@ -189,41 +347,67 @@ const INITIAL_REQUESTS: PharmaRequest[] = [
     isFreeText: false,
     genericName: 'Amoxicillin + Clavulanic acid',
     category: 'ANTI-INFECTIVE MEDICINES',
+    categoryType: 'medicine',
     quantity: 100,
     unit: 'باكت (Box)',
     urgency: 'high',
+    needsDelivery: true,
+    acknowledgedResponsibility: true,
     status: 'open',
     notes: 'احتياج طارئ لقسم الرقود والعناية',
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
   },
   {
     id: 'req-2',
-    entityId: 'ent-105',
-    entityName: 'مركز الحياة الخيري - صنعاء',
-    drugId: 'neml-12',
-    isFreeText: false,
-    genericName: 'Paracetamol',
-    category: 'ANALGESICS, ANTIPYRETICS, NSAIDS',
-    quantity: 150,
-    unit: 'شريط (Strip)',
-    urgency: 'medium',
+    entityId: 'ent-104',
+    entityName: 'مستشفى الثورة العام - تعز',
+    isFreeText: true,
+    freeTextName: 'Trastuzumab 440mg فيال حقن أورام الثدي',
+    brandName: 'Herceptin / Ogivri',
+    category: 'أدوية أورام ومناعة',
+    categoryType: 'oncology',
+    quantity: 6,
+    unit: 'فيال (Vial)',
+    urgency: 'critical',
+    needsDelivery: true,
+    deliveryNotes: 'يلزم شحن مبرد بدرجة حرارة 2-8 مئوية حصراً',
+    acknowledgedResponsibility: true,
     status: 'open',
-    notes: 'للصرف المجاني للمرضى المتعففين',
-    createdAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+    notes: 'حاجة إنقاذ حياة عاجلة لمريضتين في مركز الأورام بتعز، نرجو من أي صيدلية أو مستودع لديه الصنف إشعارنا فوراً.',
+    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
   },
   {
     id: 'req-3',
+    entityId: 'ent-103',
+    entityName: 'صيدلية الأمل التخصصية - تعز',
+    isFreeText: true,
+    freeTextName: 'FreeStyle Libre 2 Sensors (لاصقات قياس السكر بالذراع)',
+    category: 'أجهزة ومستلزمات تشخيصية',
+    categoryType: 'diagnostic_tool',
+    quantity: 10,
+    unit: 'قطعة (Sensor)',
+    urgency: 'high',
+    needsDelivery: true,
+    acknowledgedResponsibility: true,
+    status: 'open',
+    notes: 'مطلوب لمرضى سكري أطفال منقطعة عنهم اللاصقات منذ أسبوعين.',
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  {
+    id: 'req-4',
     entityId: 'ent-101',
     entityName: 'صيدلية النور الحديثة - صنعاء',
     isFreeText: true,
     freeTextName: 'Ceftriaxone 1g Vial IV/IM',
     category: 'ANTI-INFECTIVE MEDICINES',
+    categoryType: 'medicine',
     quantity: 40,
     unit: 'فيال (Vial)',
     urgency: 'critical',
+    acknowledgedResponsibility: true,
     status: 'open',
     notes: 'مطلوب بصورة عاجلة جداً لنقص حاد بالسوق',
-    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
   },
 ];
 

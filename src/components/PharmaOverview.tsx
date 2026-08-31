@@ -13,11 +13,17 @@ import {
   CheckCircle2,
   Phone,
   FlaskConical,
-  Pill
+  Pill,
+  Truck,
+  ImageIcon,
+  AlertTriangle,
+  Flame,
+  Clock
 } from 'lucide-react';
-import { PharmaEntity, PharmaOffer, PharmaRequest, PharmaMatch } from '../types/pharmayemen';
+import { PharmaEntity, PharmaOffer, PharmaRequest, PharmaMatch, CATEGORY_TYPE_LABELS } from '../types/pharmayemen';
 import { PharmaLogo } from './PharmaLogo';
 import { Pharma24hActivityWidget } from './Pharma24hActivityWidget';
+import { INITIAL_EARLY_WARNING_ALERTS } from '../utils/pharmaStorage';
 
 interface PharmaOverviewProps {
   entity: PharmaEntity;
@@ -77,6 +83,12 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
                 <MapPin className="w-3.5 h-3.5 text-teal-400" />
                 {entity.city} - {entity.governorate}
               </span>
+              {entity.trustScore && (
+                <span className="text-amber-300 bg-amber-950/60 border border-amber-500/40 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-amber-400" />
+                  موثوقية {entity.trustScore}%
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2.5">
               <div className="sm:hidden">
@@ -118,6 +130,54 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Early Warning Shortage Intelligence Banner */}
+      {INITIAL_EARLY_WARNING_ALERTS && INITIAL_EARLY_WARNING_ALERTS.length > 0 && (
+        <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/40 text-rose-100 shadow-sm space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="p-1 rounded-lg bg-rose-500/20 text-rose-400">
+                <Flame className="w-4 h-4" />
+              </span>
+              <h4 className="text-xs sm:text-sm font-bold text-rose-200">
+                رادار الإنذار المبكر للأدوية الحرجة (Early Warning Shortage Radar)
+              </h4>
+            </div>
+            <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-full font-bold">
+              إشارات طلب متكررة خلال 48 ساعة
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+            {INITIAL_EARLY_WARNING_ALERTS.map((alert) => (
+              <div
+                key={alert.id}
+                className="p-2.5 rounded-xl bg-slate-900/90 border border-rose-500/30 flex items-start justify-between gap-3 text-xs"
+              >
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">{alert.drugName}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 bg-rose-500/20 text-rose-300 rounded font-semibold">
+                      {alert.governorate}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-snug">
+                    {alert.estimatedPatientNeed}
+                  </p>
+                  <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-emerald-400" />
+                    <span>الإجراء: {alert.recommendedAction}</span>
+                  </p>
+                </div>
+                <div className="text-center shrink-0">
+                  <div className="text-base font-black text-rose-400">+{alert.requestsCountIn48h}</div>
+                  <div className="text-[9px] text-slate-400">طلبات عاجلة</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 24-Hour Market Activity & Growth Indicator Widget */}
       <Pharma24hActivityWidget
@@ -368,29 +428,58 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
           </div>
 
           <div className="space-y-3">
-            {offers.slice(0, 3).map((offer) => (
-              <div
-                key={offer.id}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {offer.genericName || offer.brandName || offer.freeTextName}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    الكمية: <span className="font-semibold text-slate-800 dark:text-slate-200">{offer.quantity} {offer.unit}</span>
-                    {offer.price ? ` • السعر: ${offer.price} ${offer.currency}` : ''}
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Building2 className="w-3 h-3" />
-                    {offer.entityName}
-                  </p>
+            {offers.slice(0, 3).map((offer) => {
+              const catInfo = offer.categoryType ? CATEGORY_TYPE_LABELS[offer.categoryType] : null;
+              return (
+                <div
+                  key={offer.id}
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    {offer.imageUrl ? (
+                      <img
+                        src={offer.imageUrl}
+                        alt="صورة الصنف"
+                        className="w-10 h-10 rounded-lg object-cover border border-emerald-500/30 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 flex items-center justify-center text-emerald-600 shrink-0 text-base">
+                        {catInfo?.icon || '💊'}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {offer.genericName || offer.brandName || offer.freeTextName}
+                        </h4>
+                        {catInfo && (
+                          <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded font-medium">
+                            {catInfo.label}
+                          </span>
+                        )}
+                        {offer.needsDelivery && (
+                          <span className="text-[9px] bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                            <Truck className="w-2.5 h-2.5" />
+                            شحن متاح
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        الكمية: <span className="font-semibold text-slate-800 dark:text-slate-200">{offer.quantity} {offer.unit}</span>
+                        {offer.price ? ` • السعر: ${offer.price} ${offer.currency}` : ''}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <Building2 className="w-3 h-3" />
+                        {offer.entityName}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded shrink-0">
+                    {offer.status === 'active' ? 'نشط' : offer.status}
+                  </span>
                 </div>
-                <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded">
-                  {offer.status === 'active' ? 'نشط' : offer.status}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
@@ -410,36 +499,65 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
           </div>
 
           <div className="space-y-3">
-            {requests.slice(0, 3).map((req) => (
-              <div
-                key={req.id}
-                className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
-                    {req.genericName || req.freeTextName}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    الكمية المطلوبة: <span className="font-semibold text-slate-800 dark:text-slate-200">{req.quantity} {req.unit}</span>
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
-                    <Building2 className="w-3 h-3" />
-                    {req.entityName}
-                  </p>
-                </div>
-                <span
-                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                    req.urgency === 'critical'
-                      ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
-                      : req.urgency === 'high'
-                      ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
-                      : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-                  }`}
+            {requests.slice(0, 3).map((req) => {
+              const catInfo = req.categoryType ? CATEGORY_TYPE_LABELS[req.categoryType] : null;
+              return (
+                <div
+                  key={req.id}
+                  className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-3"
                 >
-                  {req.urgency === 'critical' ? 'حرج جداً' : req.urgency === 'high' ? 'عاجل' : 'عادي'}
-                </span>
-              </div>
-            ))}
+                  <div className="flex items-start gap-2.5 min-w-0">
+                    {req.imageUrl ? (
+                      <img
+                        src={req.imageUrl}
+                        alt="صورة الروشتة/الصنف"
+                        className="w-10 h-10 rounded-lg object-cover border border-amber-500/30 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/50 flex items-center justify-center text-amber-600 shrink-0 text-base">
+                        {catInfo?.icon || '🔍'}
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                          {req.genericName || req.freeTextName}
+                        </h4>
+                        {catInfo && (
+                          <span className="text-[9px] bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.2 rounded font-medium">
+                            {catInfo.label}
+                          </span>
+                        )}
+                        {req.needsDelivery && (
+                          <span className="text-[9px] bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                            <Truck className="w-2.5 h-2.5" />
+                            شحن مطلوب
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        الكمية المطلوبة: <span className="font-semibold text-slate-800 dark:text-slate-200">{req.quantity} {req.unit}</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                        <Building2 className="w-3 h-3" />
+                        {req.entityName}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[10px] font-bold px-2 py-0.5 rounded shrink-0 ${
+                      req.urgency === 'critical'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300'
+                        : req.urgency === 'high'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
+                    }`}
+                  >
+                    {req.urgency === 'critical' ? 'حرج جداً' : req.urgency === 'high' ? 'عاجل' : 'عادي'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -448,3 +566,4 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
     </div>
   );
 };
+

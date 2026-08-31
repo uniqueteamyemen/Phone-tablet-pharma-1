@@ -31,6 +31,7 @@ export const PharmaSocialBroadcastView: React.FC<PharmaSocialBroadcastViewProps>
   requests,
   initialPayload,
 }) => {
+  const [broadcastMode, setBroadcastMode] = useState<'active' | 'fulfilled'>('active');
   const [selectedType, setSelectedType] = useState<'offer' | 'request'>('offer');
   const [selectedOfferId, setSelectedOfferId] = useState<string>(offers[0]?.id || '');
   const [selectedRequestId, setSelectedRequestId] = useState<string>(requests[0]?.id || '');
@@ -250,7 +251,8 @@ export const PharmaSocialBroadcastView: React.FC<PharmaSocialBroadcastViewProps>
   };
 
   // Pre-formatted Facebook Text (Anonymous Drug Ad driving traffic to platform)
-  const facebookPostText = `📢 [إشعار سوق الدواء اليمني | منصة PharmaYemen]
+  const facebookPostText = broadcastMode === 'active' 
+    ? `📢 [إشعار سوق الدواء اليمني | منصة PharmaYemen]
 ${payload.type === 'offer' ? '🟢 【دواء معروض】 متوفر عرض دواء جاهز للتوريد والتسليم الفوري' : '🔴 【دواء مطلوب】 مطلوب دواء بصورة عاجلة لتغطية احتياج صيدلاني'}
 
 💊 الصنف الدوائي: ${payload.drugName} ${payload.brandName ? `(${payload.brandName})` : ''}
@@ -263,10 +265,22 @@ ${payload.expiryDate ? `⏳ الصلاحية: ${payload.expiryDate}\n` : ''}
 https://pharmayemen.app
 
 ---
-#سوق_الدواء_اليمني #صيدليات_${payload.governorate.replace(/\s+/g, '_')} #أدوية_اليمن #PharmaYemen #نقابة_الصيادلة #أطباء_اليمن`;
+#سوق_الدواء_اليمني #صيدليات_${payload.governorate.replace(/\s+/g, '_')} #أدوية_اليمن #PharmaYemen #نقابة_الصيادلة #أطباء_اليمن`
+    : `🎉 [إشعار نجاح | تم تلبية الاحتياج بنجاح عبر منصة PharmaYemen]
+✅ نعلن للأخوة الأطباء والصيادلة في محافظة ${payload.governorate} أنه تم تلبية ${payload.type === 'offer' ? 'عرض' : 'طلب'} الدواء التالي بنجاح والربط بين الطرفين:
+
+💊 الصنف: ${payload.drugName} ${payload.brandName ? `(${payload.brandName})` : ''}
+📍 المحافظة: ${payload.governorate}
+
+📢 هل لديكم أدوية راكدة ترغبون بتدويرها أو أدوية مقطوعة تبحثون عنها؟
+سجلوا عروضكم وطلباتكم الآن لتتم المطابقة الذكية فوراً عبر المنصة:
+🔗 https://pharmayemen.app
+
+#PharmaYemen #سوق_الدواء_اليمني #صيادلة_اليمن`;
 
   // Pre-formatted Telegram Text (Anonymous Drug Ad driving traffic to platform)
-  const telegramPostText = `⚡ *[سوق الدواء اليمني - PharmaYemen]*
+  const telegramPostText = broadcastMode === 'active'
+    ? `⚡ *[سوق الدواء اليمني - PharmaYemen]*
 ${payload.type === 'offer' ? '🟢 *【دواء معروض للتوريد】*' : '🔴 *【دواء مطلوب بشكل عاجل】*'}
 
 💊 *الصنف:* ${payload.drugName} ${payload.brandName ? `(${payload.brandName})` : ''}
@@ -275,7 +289,15 @@ ${payload.expiryDate ? `⏳ *الصلاحية:* ${payload.expiryDate}\n` : ''}
 🔒 *الكميات والتنسيق المباشر:*
 _للحصول على الصنف أو تلبية الطلب، ادخل المنصة واضغط زر التنسيق ليتم ربطك مباشرة:_
 
-🔗 *رابط المنصة:* https://pharmayemen.app`;
+🔗 *رابط المنصة:* https://pharmayemen.app`
+    : `🎉 *[تمت التلبية بنجاح - PharmaYemen]*
+✅ *تم بنجاح توفير ومطابقة:*
+💊 *${payload.drugName}* ${payload.brandName ? `(${payload.brandName})` : ''}
+📍 *محافظة:* ${payload.governorate}
+
+_هل تبحث عن أدوية ناقصة أو لديك فائض تريد تدويره؟_
+👉 *سجل عرضك أو طلبك الآن مجاناً عبر المنصة:*
+🔗 https://pharmayemen.app`;
 
   // Direct share to Telegram URL
   const handleOpenTelegramShare = () => {
@@ -313,30 +335,58 @@ _للحصول على الصنف أو تلبية الطلب، ادخل المنص
           </div>
         </div>
 
-        {/* Action Type Selector */}
-        <div className="flex items-center gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
-          <button
-            onClick={() => setSelectedType('offer')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              selectedType === 'offer'
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <FileText className="w-3.5 h-3.5" />
-            <span>بث عرض فائض</span>
-          </button>
-          <button
-            onClick={() => setSelectedType('request')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-              selectedType === 'request'
-                ? 'bg-amber-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            <Building2 className="w-3.5 h-3.5" />
-            <span>بث طلب احتياج</span>
-          </button>
+        {/* Mode Selector & Action Type Selector */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Active vs Fulfilled Status Toggle */}
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setBroadcastMode('active')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                broadcastMode === 'active'
+                  ? 'bg-sky-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>إعلان نشط</span>
+            </button>
+            <button
+              onClick={() => setBroadcastMode('fulfilled')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                broadcastMode === 'fulfilled'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>🎉 تمت التلبية</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setSelectedType('offer')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedType === 'offer'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>عرض فائض</span>
+            </button>
+            <button
+              onClick={() => setSelectedType('request')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                selectedType === 'request'
+                  ? 'bg-amber-600 text-white shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>طلب احتياج</span>
+            </button>
+          </div>
         </div>
       </div>
 

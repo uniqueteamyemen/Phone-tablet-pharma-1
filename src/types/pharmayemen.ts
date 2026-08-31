@@ -4,6 +4,51 @@ import nemlData from '../data/nemlCatalog.json';
 export type PharmaSubscriptionPlan = 'free' | 'pro' | 'enterprise';
 export type PharmaUserRole = 'admin' | 'pharmacy' | 'visitor';
 
+export type PharmaItemCategoryType = 
+  | 'medicine' 
+  | 'oncology' 
+  | 'chronic' 
+  | 'diet_nutrition' 
+  | 'skincare_cosmetics' 
+  | 'medical_device' 
+  | 'diagnostic_tool' 
+  | 'other';
+
+export const CATEGORY_TYPE_LABELS: Record<PharmaItemCategoryType, { label: string; icon: string; color: string }> = {
+  medicine: { label: 'أدوية عامة وأساسية', icon: '💊', color: 'emerald' },
+  oncology: { label: 'أدوية أورام وأمراض نادرة وخبيثة', icon: '🎗️', color: 'rose' },
+  chronic: { label: 'أدوية الأمراض المزمنة', icon: '❤️', color: 'sky' },
+  diet_nutrition: { label: 'أدوية ومكملات الدايت والتغذية', icon: '🥗', color: 'amber' },
+  skincare_cosmetics: { label: 'مستحضرات علاجية وبشرة وتجميل', icon: '✨', color: 'purple' },
+  medical_device: { label: 'أجهزة ومستلزمات طبية (قياس ضغط، تنفس، إلخ)', icon: '🩺', color: 'teal' },
+  diagnostic_tool: { label: 'لاصقات وشرائط قياس السكر (FreeStyle Libre وغيرها)', icon: '🩹', color: 'indigo' },
+  other: { label: 'أصناف ومستلزمات أخرى حرة', icon: '📦', color: 'slate' },
+};
+
+export interface DeliveryCourierPartner {
+  id: string;
+  name: string;
+  coverageGovernorates: string[];
+  phone: string;
+  whatsapp: string;
+  rating: number;
+  deliverySpeed: string;
+  isVerified: boolean;
+  notes: string;
+}
+
+export interface EarlyWarningShortageAlert {
+  id: string;
+  drugName: string;
+  genericName?: string;
+  governorate: string;
+  requestsCountIn48h: number;
+  criticality: 'red_alert' | 'high_warning';
+  estimatedPatientNeed: string;
+  recommendedAction: string;
+  createdAt: string;
+}
+
 export interface PharmaStockAlert {
   id: string;
   entityId: string;
@@ -40,6 +85,8 @@ export interface SocialBroadcastPayload {
   expiryDate?: string;
   urgency?: string;
   notes?: string;
+  categoryType?: PharmaItemCategoryType;
+  imageUrl?: string;
   createdAt?: string;
   status?: 'queued' | 'dispatched_simulated';
   directUrl?: string;
@@ -69,6 +116,9 @@ export interface PharmaEntity {
   address: string;
   phone: string;
   status: 'verified' | 'pending' | 'rejected';
+  trustScore?: number; // 0 - 100%
+  successfulMatchesCount?: number;
+  rating?: number;
   subscriptionPlan?: PharmaSubscriptionPlan;
   subscriptionExpiresAt?: string;
   createdAt: string;
@@ -85,12 +135,17 @@ export interface PharmaOffer {
   brandName?: string;
   strength?: string;
   category?: string;
+  categoryType?: PharmaItemCategoryType;
+  imageUrl?: string;
   quantity: number;
   unit: string;
-  price?: number;
+  price?: number; // optional, user-defined or empty
   currency: string;
   batchNumber?: string;
   expiryDate: string;
+  needsDelivery?: boolean;
+  deliveryNotes?: string;
+  acknowledgedResponsibility?: boolean;
   status: 'active' | 'closed' | 'expired';
   notes?: string;
   createdAt: string;
@@ -107,9 +162,14 @@ export interface PharmaRequest {
   brandName?: string;
   strength?: string;
   category?: string;
+  categoryType?: PharmaItemCategoryType;
+  imageUrl?: string;
   quantity: number;
   unit: string;
   urgency: 'low' | 'medium' | 'high' | 'critical';
+  needsDelivery?: boolean;
+  deliveryNotes?: string;
+  acknowledgedResponsibility?: boolean;
   status: 'open' | 'fulfilled' | 'closed';
   notes?: string;
   createdAt: string;

@@ -31,6 +31,7 @@ import { PharmaSocialBroadcastView } from './components/PharmaSocialBroadcastVie
 import { PharmaSocialBroadcastModal } from './components/PharmaSocialBroadcastModal';
 import { PharmaClinicalTools } from './components/PharmaClinicalTools';
 import { PharmaAboutView } from './components/PharmaAboutView';
+import { PharmaFAQModal } from './components/PharmaFAQModal';
 import { CreateOfferModal, CreateRequestModal } from './components/PharmaModals';
 import { PharmaUserManagerModal } from './components/PharmaUserManagerModal';
 import { PharmaInstallModal } from './components/PharmaInstallModal';
@@ -99,6 +100,7 @@ export default function App() {
   // Modals state
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [isFAQModalOpen, setIsFAQModalOpen] = useState(false);
   const [isUserManagerOpen, setIsUserManagerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
@@ -341,6 +343,7 @@ export default function App() {
         onOpenBarcodeScanner={() => setIsBarcodeScannerOpen(true)}
         onOpenGoogleAutofill={() => setIsUserManagerOpen(true)}
         onOpenSocialBroadcast={() => setActiveTab('social')}
+        onOpenFAQ={() => setIsFAQModalOpen(true)}
       />
 
       {/* Main Content Area with Touch Gestures Ref */}
@@ -540,6 +543,12 @@ export default function App() {
         target={matchActionTarget}
         currentEntity={entity}
         onConfirmMatch={handleConfirmMatch}
+      />
+
+      {/* Platform FAQ & Workflow Guide Modal */}
+      <PharmaFAQModal
+        isOpen={isFAQModalOpen}
+        onClose={() => setIsFAQModalOpen(false)}
       />
 
     </div>
