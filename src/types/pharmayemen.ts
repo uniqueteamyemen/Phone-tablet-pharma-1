@@ -1,0 +1,291 @@
+import { MedicineSearchRecord, getMedicineSearchMatch, rankMedicinesBySearch } from '../medicineSearch';
+import nemlData from '../data/nemlCatalog.json';
+
+export type PharmaSubscriptionPlan = 'free' | 'pro' | 'enterprise';
+export type PharmaUserRole = 'admin' | 'pharmacy' | 'visitor';
+
+export interface PharmaStockAlert {
+  id: string;
+  entityId: string;
+  entityName: string;
+  drugName: string;
+  genericName?: string;
+  brandName?: string;
+  type: 'near_expiry' | 'stagnant_stock' | 'market_shortage' | 'price_disruption';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  quantity: number;
+  unit: string;
+  expiryDate?: string;
+  daysUntilExpiry?: number;
+  governorate?: string;
+  recommendedAction: string;
+  isProOnly: boolean;
+  createdAt: string;
+}
+
+export interface SocialBroadcastPayload {
+  id?: string;
+  type: 'offer' | 'request' | 'urgent_shortage';
+  drugName: string;
+  genericName?: string;
+  brandName?: string;
+  strength?: string;
+  quantity: number;
+  unit: string;
+  price?: number;
+  currency?: string;
+  entityName?: string;
+  governorate: string;
+  phone?: string;
+  expiryDate?: string;
+  urgency?: string;
+  notes?: string;
+  createdAt?: string;
+  status?: 'queued' | 'dispatched_simulated';
+  directUrl?: string;
+  formattedText?: {
+    telegram: string;
+    facebook: string;
+    instagram: string;
+    whatsapp: string;
+  };
+}
+
+export interface PharmaEntity {
+  id: string;
+  name: string;
+  type: 
+    | 'pharmacy' 
+    | 'hospital' 
+    | 'distributor' 
+    | 'clinic' 
+    | 'wholesaler'
+    | 'individual_supplier'
+    | 'beauty_skincare'
+    | 'supplements_nutrition';
+  licenseNumber: string;
+  governorate: string;
+  city: string;
+  address: string;
+  phone: string;
+  status: 'verified' | 'pending' | 'rejected';
+  subscriptionPlan?: PharmaSubscriptionPlan;
+  subscriptionExpiresAt?: string;
+  createdAt: string;
+}
+
+export interface PharmaOffer {
+  id: string;
+  entityId: string;
+  entityName: string;
+  drugId?: string;
+  isFreeText: boolean;
+  freeTextName?: string;
+  genericName?: string;
+  brandName?: string;
+  strength?: string;
+  category?: string;
+  quantity: number;
+  unit: string;
+  price?: number;
+  currency: string;
+  batchNumber?: string;
+  expiryDate: string;
+  status: 'active' | 'closed' | 'expired';
+  notes?: string;
+  createdAt: string;
+}
+
+export interface PharmaRequest {
+  id: string;
+  entityId: string;
+  entityName: string;
+  drugId?: string;
+  isFreeText: boolean;
+  freeTextName?: string;
+  genericName?: string;
+  brandName?: string;
+  strength?: string;
+  category?: string;
+  quantity: number;
+  unit: string;
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'fulfilled' | 'closed';
+  notes?: string;
+  createdAt: string;
+}
+
+export interface PharmaMatch {
+  id: string;
+  offerId: string;
+  requestId: string;
+  drugName: string;
+  activeIngredient: string;
+  activeIngredientAr?: string;
+  offeringEntity: string;
+  requestingEntity: string;
+  offerQuantity: number;
+  requestQuantity: number;
+  matchScore?: number; // legacy optional
+  matchType: 'exact' | 'prefix' | 'fuzzy' | 'clinical';
+  createdAt: string;
+  status: 'new' | 'viewed' | 'connected';
+  // Clinical Matching Attributes
+  offerStrength?: string;
+  requestStrength?: string;
+  isSameStrength: boolean;
+  offerDosageForm?: string;
+  requestDosageForm?: string;
+  isSameDosageForm: boolean;
+  clinicalMatchKind: 'exact_clinical' | 'alt_strength' | 'alt_form' | 'alt_both';
+  clinicalMatchLabel: string;
+  clinicalNotes?: string;
+  matchReasons?: {
+    drugMatch?: number;
+    distanceScore?: number;
+    notes?: string;
+  };
+}
+
+export interface PharmaCatalogDrug extends MedicineSearchRecord {
+  id: string;
+  genericName: string;
+  genericNameAr?: string;
+  brandName?: string;
+  brandNameAr?: string;
+  dosageForm?: string;
+  strength?: string;
+  category: string;
+  nemlCategory?: string;
+  isYemeniLocal?: boolean;
+  manufacturer?: string;
+}
+
+// Common Brand Aliases and Arabic Names dictionary mapped to generic names
+const COMMON_TRADE_NAMES_DICT: Record<string, { brandEn: string[]; brandAr: string[]; activeAr?: string }> = {
+  'amoxicillin + clavulanic acid': {
+    brandEn: ['Augmentin', 'Curam', 'Megamox', 'Klavox', 'Amoclan', 'Julmentin'],
+    brandAr: ['اوجمنتين', 'كيرام', 'ميجاموكس', 'كلافوكس', 'اموكلان', 'جولمنتين', 'اوجم'],
+    activeAr: 'أموكسيسيلين + حمض الكلافولانيك',
+  },
+  'amoxicillin': {
+    brandEn: ['Amoxil', 'Biomox', 'Hiconcil', 'Moxilen', 'Amoxydar'],
+    brandAr: ['اموكسيل', 'بيوموكس', 'هايكونسيل', 'اموكسيسيلين', 'اموكسي'],
+    activeAr: 'أموكسيسيلين',
+  },
+  'paracetamol': {
+    brandEn: ['Panadol', 'Adol', 'Calpol', 'Fevadol', 'Paramol', 'Tylenol', 'Cetamol'],
+    brandAr: ['بنادول', 'ادول', 'كالبول', 'فيفادول', 'بارامول', 'تايلينول', 'سيتامول', 'باراسيتامول'],
+    activeAr: 'باراسيتامول',
+  },
+  'ibuprofen': {
+    brandEn: ['Brufen', 'Profen', 'Advil', 'Motrin', 'Ibugesic', 'Profinal'],
+    brandAr: ['بروفين', 'بروفينال', 'ادفيل', 'ايبوجيسيك', 'ايبوبروفين'],
+    activeAr: 'إيبوبروفين',
+  },
+  'diclofenac': {
+    brandEn: ['Voltaren', 'Cataflam', 'Olfen', 'Voveran', 'Diclogesic'],
+    brandAr: ['فولتارين', 'كتافلام', 'اولفين', 'ديكلوجيسيك', 'ديكلوفيناك'],
+    activeAr: 'ديكلوفيناك',
+  },
+  'ciprofloxacin': {
+    brandEn: ['Ciprodar', 'Ciprocin', 'Cipro', 'Ciflox'],
+    brandAr: ['سيبرودار', 'سيبروسين', 'سيبرو', 'سيبروفلوكساسين'],
+    activeAr: 'سيبروفلوكساسين',
+  },
+  'azithromycin': {
+    brandEn: ['Zithromax', 'Azomycin', 'Azitrom'],
+    brandAr: ['زيثروماكس', 'ازوميسين', 'ازيثرومايسين'],
+    activeAr: 'أزيثرومايسين',
+  },
+  'metformin': {
+    brandEn: ['Glucophage', 'Metfor'],
+    brandAr: ['جلوكوفاج', 'ميتفور', 'ميتفورمين'],
+    activeAr: 'ميتفورمين',
+  },
+  'omeprazole': {
+    brandEn: ['Losec', 'Gasec', 'Omez', 'Hyposec'],
+    brandAr: ['لوسيك', 'جاسيك', 'اوميز', 'هايبوسيك', 'اوميبرازول'],
+    activeAr: 'أوميبرازول',
+  },
+  'esomeprazole': {
+    brandEn: ['Nexium'],
+    brandAr: ['نيكسيوم', 'ايزوميبرازول'],
+    activeAr: 'إيزوميبرازول',
+  },
+  'ceftriaxone': {
+    brandEn: ['Rocephin', 'Cefaxone', 'Mesporin'],
+    brandAr: ['روسيفين', 'سيفاكسون', 'سيفترياكسون', 'سفترياكسون'],
+    activeAr: 'سيفترياكسون',
+  },
+  'salbutamol': {
+    brandEn: ['Ventolin', 'Butalin'],
+    brandAr: ['فينتولين', 'بوتالين', 'سالبوتامول'],
+    activeAr: 'سالبوتامول',
+  },
+  'metronidazole': {
+    brandEn: ['Flagyl'],
+    brandAr: ['فلاجيل', 'ميترونيدازول'],
+    activeAr: 'ميترونيدازول',
+  },
+  'bisoprolol': {
+    brandEn: ['Concor', 'Bisotens'],
+    brandAr: ['كونكور', 'بيسوتنس', 'بيسوبرولول'],
+    activeAr: 'بيسوبرولول',
+  },
+  'atorvastatin': {
+    brandEn: ['Lipitor', 'Atorva'],
+    brandAr: ['ليبيتور', 'اتورفا', 'أتورفاستاتين'],
+    activeAr: 'أتورفاستاتين',
+  },
+};
+
+// Convert NEML JSON into typed Catalog Drugs with rich trade names and aliases
+export const INITIAL_NEML_CATALOG: PharmaCatalogDrug[] = nemlData.catalog.map((item, idx) => {
+  const genLower = (item.genericName || '').toLowerCase().trim();
+  const matchedAliasKey = Object.keys(COMMON_TRADE_NAMES_DICT).find(
+    (k) => genLower.includes(k) || k.includes(genLower)
+  );
+  const alias = matchedAliasKey ? COMMON_TRADE_NAMES_DICT[matchedAliasKey] : null;
+
+  const tradeNames = alias ? [
+    ...alias.brandEn.map((b) => ({ tradeName: b, scientificName: item.genericName, activeIngredients: alias.activeAr })),
+    ...alias.brandAr.map((b) => ({ tradeNameAr: b, scientificName: item.genericName, activeIngredients: alias.activeAr })),
+  ] : [];
+
+  return {
+    id: `neml-${idx + 1}`,
+    genericName: item.genericName,
+    genericNameAr: alias?.activeAr || item.genericName,
+    brandName: alias?.brandEn[0] || item.genericName,
+    brandNameAr: alias?.brandAr[0] || item.genericName,
+    dosageForm: item.dosageForm,
+    strength: item.strength?.replace(/^:\s*/, '') || '',
+    category: item.category || 'عام',
+    nemlCategory: item.category || 'NEML Essential',
+    isYemeniLocal: false,
+    manufacturer: 'مسجل في قائمة الأدوية الأساسية اليمنية (NEML)',
+    tradeNames: tradeNames.length > 0 ? tradeNames : undefined,
+  };
+});
+
+// Arabic Category Translation Map
+export const CATEGORY_TRANSLATIONS: Record<string, string> = {
+  'all': 'جميع الفئات العلاجية',
+  'ANTI-INFECTIVE MEDICINES': 'المضادات الحيوية والعدوى',
+  'ANALGESICS, ANTIPYRETICS, NSAIDS': 'المسكنات ومضادات الالتهاب',
+  'CARDIOVASCULAR MEDICINES': 'أدوية القلب والدورة الدموية والضغط',
+  'MEDICINES AFFECTING THE BLOOD': 'أدوية الدم والتخثر',
+  'GASTROINTESTINAL MEDICINES': 'أدوية الجهاز الهضمي والمعدة',
+  'RESPIRATORY MEDICINES': 'أدوية الجهاز التنفسي والربو',
+  'CENTRAL NERVOUS SYSTEM': 'أدوية الجهاز العصبي والنفسي',
+  'HORMONES, OTHER ENDOCRINE MEDICINES AND CONTRACEPTIVES': 'الهرمونات والغدد والسكري',
+  'IMMUNOLOGICALS': 'اللقاحات والأمصال والمناعة',
+  'OPHTHALMOLOGICAL PREPARATIONS': 'مستحضرات العيون',
+  'DERMATOLOGICAL MEDICINES (TOPICAL)': 'الأدوية الجلدية والموضعية',
+  'DISINFECTANTS AND ANTISEPTICS': 'المطهرات والمعقمات',
+  'DIURETICS': 'مدرات البول',
+  'VITAMINS AND MINERALS': 'الفيتامينات والمعادن',
+  'EAR, NOSE AND THROAT PREPARATIONS': 'مستحضرات الأنف والأذن والحنجرة',
+  'MEDICINES FOR REPRODUCTIVE HEALTH AND PERINATAL CARE': 'الصحة الإنجابية والنساء والولادة',
+};

@@ -1,0 +1,6 @@
+{
+  "name": "PharmaYemen — منصة ذكاء سوق الدواء في اليمن",
+  "description": "منصة ذكاء سوق الدواء في اليمن لتنظيم إشارات العرض والطلب بين المنشآت الصحية والصيدلانية، مع الكتالوج الوطني الموحد ومحرك المطابقة الذكي.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

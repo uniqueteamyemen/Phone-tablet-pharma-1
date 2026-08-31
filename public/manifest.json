@@ -1,0 +1,30 @@
+{
+  "short_name": "PharmaYemen",
+  "name": "PharmaYemen — منصة ذكاء سوق الدواء في اليمن",
+  "description": "منصة ذكاء سوق الدواء في اليمن لتنظيم إشارات العرض والطلب بين المنشآت الصحية والصيدلانية",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/icon-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "theme_color": "#059669",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl"
+}
