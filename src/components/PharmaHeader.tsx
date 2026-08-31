@@ -20,12 +20,14 @@ import {
   Share2,
   Crown,
   UserCheck,
-  Lock
+  Lock,
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 import { PharmaEntity, PharmaUserRole } from '../types/pharmayemen';
 import { PharmaLogo } from './PharmaLogo';
 
-export type PharmaTab = 'overview' | 'catalog' | 'offers' | 'requests' | 'matches' | 'alerts' | 'social' | 'clinical' | 'about';
+export type PharmaTab = 'overview' | 'catalog' | 'offers' | 'requests' | 'matches' | 'tickets' | 'entities' | 'alerts' | 'social' | 'clinical' | 'about';
 
 interface PharmaHeaderProps {
   activeTab: PharmaTab;
@@ -36,6 +38,8 @@ interface PharmaHeaderProps {
   activeOffersCount: number;
   openRequestsCount: number;
   matchesCount: number;
+  ticketsCount?: number;
+  entitiesCount?: number;
   alertsCount?: number;
   onOpenCreateOffer: () => void;
   onOpenCreateRequest: () => void;
@@ -45,6 +49,7 @@ interface PharmaHeaderProps {
   onOpenGoogleAutofill?: () => void;
   onOpenSocialBroadcast?: () => void;
   onOpenFAQ?: () => void;
+  onOpenPhoneAuth?: () => void;
 }
 
 export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
@@ -56,6 +61,8 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
   activeOffersCount,
   openRequestsCount,
   matchesCount,
+  ticketsCount = 0,
+  entitiesCount = 6,
   alertsCount = 3,
   onOpenCreateOffer,
   onOpenCreateRequest,
@@ -65,6 +72,7 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
   onOpenGoogleAutofill,
   onOpenSocialBroadcast,
   onOpenFAQ,
+  onOpenPhoneAuth,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const isPro = entity.subscriptionPlan === 'pro' || entity.subscriptionPlan === 'enterprise';
@@ -75,14 +83,16 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
     { id: 'offers', label: userRole === 'admin' ? 'كافة العروض (فائض)' : 'عروضي والسوق', icon: FileText, badge: activeOffersCount },
     { id: 'requests', label: userRole === 'admin' ? 'كافة الطلبات (شح)' : 'طلباتي والاحتياج', icon: Building2, badge: openRequestsCount },
     { id: 'matches', label: 'المطابقات الذكية', icon: ArrowLeftRight, badge: matchesCount, badgeColor: 'bg-emerald-500 text-white' },
+    { id: 'tickets', label: 'تذاكر التنسيق والشات', icon: MessageCircle, badge: ticketsCount > 0 ? ticketsCount : null, badgeColor: 'bg-purple-600 text-white font-bold' },
+    { id: 'entities', label: 'الجهات والتجار المسجلين', icon: Users, badge: entitiesCount > 0 ? entitiesCount : null, badgeColor: 'bg-teal-600 text-white font-bold' },
     { id: 'alerts', label: 'تنبيهات المخزون PRO', icon: BellRing, badge: 'PRO', badgeColor: 'bg-amber-500 text-slate-950 font-black' },
-    { id: 'social', label: 'البث وتيليجرام', icon: Share2, badge: 'جديد' },
+    { id: 'social', label: userRole === 'admin' ? 'مركز البث والمراجعة' : 'مركز النشر والجدولة', icon: Share2, badge: userRole === 'admin' ? 'تحكم الإدارة' : null, badgeColor: 'bg-purple-600 text-white' },
     { id: 'clinical', label: 'أدوات الصيدلي', icon: Sparkles, badge: null },
     { id: 'about', label: 'عن المنصة', icon: HelpCircle, badge: null },
   ];
 
   return (
-    <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-40 shadow-md">
+    <header className="bg-slate-900 border-b border-slate-800 text-white sticky top-0 z-40 shadow-md" dir="rtl">
       {/* Top Banner */}
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 flex items-center justify-between">
         {/* Brand Lockup with Official Logo */}
@@ -96,12 +106,13 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
                   وضع المشرف العام (Admin Mode)
                 </span>
               ) : (
-                <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
                   صيدلية: {entity.name.length > 20 ? entity.name.slice(0, 20) + '...' : entity.name}
                 </span>
               )}
             </div>
-            <p className="text-[11px] text-slate-400 hidden xl:block">سوق الدواء اليمني الموحد — تنظيم إشارات العرض والطلب</p>
+            <p className="text-[11px] text-slate-400 hidden xl:block">سوق الدواء اليمني الموحد — تنظيم إشارات العرض والطلب والشات الآمن</p>
           </div>
         </div>
 
@@ -138,6 +149,18 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
             )}
           </button>
 
+          {/* Quick OTP Verification Button */}
+          {onOpenPhoneAuth && (
+            <button
+              onClick={onOpenPhoneAuth}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition shadow-xs cursor-pointer"
+              title="التحقق السريع برقم الهاتف عبر OTP"
+            >
+              <Phone className="w-3.5 h-3.5 text-emerald-400" />
+              <span>توثيق OTP</span>
+            </button>
+          )}
+
           {/* Social Broadcast Quick Action */}
           <button
             onClick={() => onSelectTab('social')}
@@ -164,29 +187,22 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
           {onOpenGoogleAutofill && (
             <button
               onClick={onOpenGoogleAutofill}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 text-xs font-semibold transition cursor-pointer"
-              title="التعبئة السريعة ببيانات Google"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition shadow-xs cursor-pointer"
+              title="تعبئة بيانات الصيدلية بنقرة واحدة من حساب Google"
             >
-              <div className="w-3.5 h-3.5 rounded-full bg-white flex items-center justify-center p-0.5">
-                <svg viewBox="0 0 24 24" className="w-full h-full">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.37 7.33 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.25 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-              </div>
+              <Zap className="w-3.5 h-3.5 text-indigo-400" />
               <span>تعبئة Google</span>
             </button>
           )}
 
-          {/* FAQ Modal Quick Action */}
+          {/* FAQ & Quick User Guide */}
           {onOpenFAQ && (
             <button
               onClick={onOpenFAQ}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition shadow-xs cursor-pointer"
-              title="الأسئلة الشائعة ودليل عمل المنصة"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-750 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition cursor-pointer"
+              title="دليل استخدام المنصة والأسئلة الشائعة"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
+              <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
               <span>دليل الاستخدام وFAQ</span>
             </button>
           )}
@@ -346,18 +362,18 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
                     onSelectTab(item.id as PharmaTab);
                     setMobileMenuOpen(false);
                   }}
-                  className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition ${
+                  className={`flex items-center justify-between p-2.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
                     isActive
-                      ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50'
-                      : 'bg-slate-800/60 text-slate-300 hover:bg-slate-800'
+                      ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-750'
                   }`}
                 >
                   <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4" />
+                    <Icon className="w-4 h-4 text-emerald-400" />
                     <span>{item.label}</span>
                   </div>
                   {item.badge !== null && (
-                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-slate-700 text-slate-300">
+                    <span className="text-[9px] bg-slate-900 px-1.5 py-0.5 rounded-md text-slate-300">
                       {item.badge}
                     </span>
                   )}
@@ -366,28 +382,31 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
             })}
           </div>
 
-          <div className="pt-2 border-t border-slate-800 flex gap-2">
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenCreateOffer();
-              }}
-              className="flex-1 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1"
-            >
-              <PlusCircle className="w-3.5 h-3.5" />
-              <span>عرض دواء</span>
-            </button>
+          {/* Mobile Quick Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onOpenCreateRequest();
               }}
-              className="flex-1 py-2 bg-amber-600 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1"
+              className="py-2.5 rounded-xl bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"
             >
-              <PlusCircle className="w-3.5 h-3.5" />
+              <PlusCircle className="w-4 h-4" />
               <span>طلب احتياج</span>
             </button>
+
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenCreateOffer();
+              }}
+              className="py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>عرض دواء</span>
+            </button>
           </div>
+
         </div>
       )}
     </header>

@@ -66,11 +66,7 @@ export const PharmaOffersView: React.FC<PharmaOffersViewProps> = ({
     }
   }, []);
 
-  const [viewScope, setViewScope] = useState<'all' | 'mine' | 'matched_only'>(() => {
-    if (userRole === 'admin') return 'all';
-    if (isSocialReferred) return 'all';
-    return 'matched_only';
-  });
+  const [viewScope, setViewScope] = useState<'all' | 'mine' | 'matched_only'>('all');
 
   // Calculate my active requested drug names to show only matching offers when in matched_only mode
   const myRequestDrugNames = useMemo(() => {
@@ -309,8 +305,8 @@ export const PharmaOffersView: React.FC<PharmaOffersViewProps> = ({
                   )}
 
                   <div className="flex items-center gap-1.5 mr-auto">
-                    {/* Quick Social Broadcast Button */}
-                    {onOpenSocialBroadcast && (
+                    {/* Admin Moderation & Broadcast Button (Admin only) */}
+                    {userRole === 'admin' && onOpenSocialBroadcast && (
                       <button
                         onClick={() =>
                           onOpenSocialBroadcast({
@@ -329,11 +325,11 @@ export const PharmaOffersView: React.FC<PharmaOffersViewProps> = ({
                             notes: offer.notes,
                           })
                         }
-                        className="px-2.5 py-1 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
-                        title="بث هذا العرض على مجموعات التيليجرام وسوشيال ميديا"
+                        className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        title="مراجعة وتجهيز للنشر الإداري في قنوات السوشيال ميديا"
                       >
-                        <Send className="w-3 h-3" />
-                        <span>بث تليجرام</span>
+                        <Send className="w-3 h-3 text-purple-400" />
+                        <span>نشر إداري</span>
                       </button>
                     )}
 
@@ -393,11 +389,7 @@ export const PharmaRequestsView: React.FC<PharmaRequestsViewProps> = ({
     }
   }, []);
 
-  const [viewScope, setViewScope] = useState<'all' | 'mine' | 'matched_only'>(() => {
-    if (userRole === 'admin') return 'all';
-    if (isSocialReferred) return 'all';
-    return 'matched_only';
-  });
+  const [viewScope, setViewScope] = useState<'all' | 'mine' | 'matched_only'>('all');
 
   // Calculate my active offered drug names to show only matching requests when in matched_only mode
   const myOfferedDrugNames = useMemo(() => {
@@ -616,8 +608,8 @@ export const PharmaRequestsView: React.FC<PharmaRequestsViewProps> = ({
                   )}
 
                   <div className="flex items-center gap-1.5 mr-auto">
-                    {/* Quick Social Broadcast Button */}
-                    {onOpenSocialBroadcast && (
+                    {/* Admin Moderation & Broadcast Button (Admin only) */}
+                    {userRole === 'admin' && onOpenSocialBroadcast && (
                       <button
                         onClick={() =>
                           onOpenSocialBroadcast({
@@ -633,11 +625,11 @@ export const PharmaRequestsView: React.FC<PharmaRequestsViewProps> = ({
                             notes: req.notes,
                           })
                         }
-                        className="px-2.5 py-1 rounded-lg bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
-                        title="بث هذا الطلب على مجموعات التيليجرام وسوشيال ميديا"
+                        className="px-2.5 py-1 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/30 text-[11px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        title="مراجعة وتجهيز للنشر الإداري في قنوات السوشيال ميديا"
                       >
-                        <Send className="w-3 h-3" />
-                        <span>بث تليجرام</span>
+                        <Send className="w-3 h-3 text-purple-400" />
+                        <span>نشر إداري</span>
                       </button>
                     )}
 

@@ -1,5 +1,4 @@
-import { MedicineSearchRecord, getMedicineSearchMatch, rankMedicinesBySearch } from '../medicineSearch';
-import nemlData from '../data/nemlCatalog.json';
+import { MedicineSearchRecord } from '../medicineSearch';
 
 export type PharmaSubscriptionPlan = 'free' | 'pro' | 'enterprise';
 export type PharmaUserRole = 'admin' | 'pharmacy' | 'visitor';
@@ -115,6 +114,7 @@ export interface PharmaEntity {
   city: string;
   address: string;
   phone: string;
+  isPhoneVerified?: boolean;
   status: 'verified' | 'pending' | 'rejected';
   trustScore?: number; // 0 - 100%
   successfulMatchesCount?: number;
@@ -175,6 +175,40 @@ export interface PharmaRequest {
   createdAt: string;
 }
 
+// In-App Direct Match Chat & Coordination Tickets
+export interface MatchChatMessage {
+  id: string;
+  senderEntityId: string;
+  senderName: string;
+  senderRole: 'sender' | 'receiver' | 'admin';
+  text: string;
+  timestamp: string;
+}
+
+export interface PharmaMatchTicket {
+  id: string;
+  matchId: string;
+  targetType: 'offer' | 'request';
+  targetItemId: string;
+  drugName: string;
+  quantity: number;
+  unit: string;
+  governorate: string;
+  // Participating parties
+  initiatorEntityId: string;
+  initiatorName: string;
+  initiatorPhone: string;
+  ownerEntityId: string;
+  ownerName: string;
+  ownerPhone: string;
+  // Security & Approval Status
+  coordinationStatus: 'pending_approval' | 'approved_open' | 'completed' | 'declined';
+  phoneExchanged: boolean;
+  messages: MatchChatMessage[];
+  lastActivityAt: string;
+  createdAt: string;
+}
+
 export interface PharmaMatch {
   id: string;
   offerId: string;
@@ -190,6 +224,7 @@ export interface PharmaMatch {
   matchType: 'exact' | 'prefix' | 'fuzzy' | 'clinical';
   createdAt: string;
   status: 'new' | 'viewed' | 'connected';
+  ticketId?: string;
   // Clinical Matching Attributes
   offerStrength?: string;
   requestStrength?: string;
@@ -222,7 +257,7 @@ export interface PharmaCatalogDrug extends MedicineSearchRecord {
 }
 
 // Common Brand Aliases and Arabic Names dictionary mapped to generic names
-const COMMON_TRADE_NAMES_DICT: Record<string, { brandEn: string[]; brandAr: string[]; activeAr?: string }> = {
+export const COMMON_TRADE_NAMES_DICT: Record<string, { brandEn: string[]; brandAr: string[]; activeAr?: string }> = {
   'amoxicillin + clavulanic acid': {
     brandEn: ['Augmentin', 'Curam', 'Megamox', 'Klavox', 'Amoclan', 'Julmentin'],
     brandAr: ['اوجمنتين', 'كيرام', 'ميجاموكس', 'كلافوكس', 'اموكلان', 'جولمنتين', 'اوجم'],
@@ -300,35 +335,6 @@ const COMMON_TRADE_NAMES_DICT: Record<string, { brandEn: string[]; brandAr: stri
   },
 };
 
-// Convert NEML JSON into typed Catalog Drugs with rich trade names and aliases
-export const INITIAL_NEML_CATALOG: PharmaCatalogDrug[] = nemlData.catalog.map((item, idx) => {
-  const genLower = (item.genericName || '').toLowerCase().trim();
-  const matchedAliasKey = Object.keys(COMMON_TRADE_NAMES_DICT).find(
-    (k) => genLower.includes(k) || k.includes(genLower)
-  );
-  const alias = matchedAliasKey ? COMMON_TRADE_NAMES_DICT[matchedAliasKey] : null;
-
-  const tradeNames = alias ? [
-    ...alias.brandEn.map((b) => ({ tradeName: b, scientificName: item.genericName, activeIngredients: alias.activeAr })),
-    ...alias.brandAr.map((b) => ({ tradeNameAr: b, scientificName: item.genericName, activeIngredients: alias.activeAr })),
-  ] : [];
-
-  return {
-    id: `neml-${idx + 1}`,
-    genericName: item.genericName,
-    genericNameAr: alias?.activeAr || item.genericName,
-    brandName: alias?.brandEn[0] || item.genericName,
-    brandNameAr: alias?.brandAr[0] || item.genericName,
-    dosageForm: item.dosageForm,
-    strength: item.strength?.replace(/^:\s*/, '') || '',
-    category: item.category || 'عام',
-    nemlCategory: item.category || 'NEML Essential',
-    isYemeniLocal: false,
-    manufacturer: 'مسجل في قائمة الأدوية الأساسية اليمنية (NEML)',
-    tradeNames: tradeNames.length > 0 ? tradeNames : undefined,
-  };
-});
-
 // Arabic Category Translation Map
 export const CATEGORY_TRANSLATIONS: Record<string, string> = {
   'all': 'جميع الفئات العلاجية',
@@ -349,3 +355,25 @@ export const CATEGORY_TRANSLATIONS: Record<string, string> = {
   'EAR, NOSE AND THROAT PREPARATIONS': 'مستحضرات الأنف والأذن والحنجرة',
   'MEDICINES FOR REPRODUCTIVE HEALTH AND PERINATAL CARE': 'الصحة الإنجابية والنساء والولادة',
 };
+
+import rawNemlJson from '../data/nemlCatalog.json';
+
+export const INITIAL_NEML_CATALOG: PharmaCatalogDrug[] = (rawNemlJson.catalog || []).map((item: any, index: number) => {
+  const genericClean = (item.genericName || '').trim();
+  const lowerGeneric = genericClean.toLowerCase();
+  const matchAlias = COMMON_TRADE_NAMES_DICT[lowerGeneric];
+
+  return {
+    id: `neml-${index + 1}`,
+    genericName: genericClean,
+    genericNameAr: matchAlias?.activeAr || undefined,
+    brandName: matchAlias?.brandEn?.join(' / ') || undefined,
+    brandNameAr: matchAlias?.brandAr?.join(' / ') || undefined,
+    dosageForm: item.dosageForm || 'Tablet',
+    strength: item.strength ? item.strength.replace(/^:\s*/, '').trim() : '',
+    category: item.category || 'General',
+    nemlCategory: item.category || 'General',
+    isYemeniLocal: false,
+  };
+});
+

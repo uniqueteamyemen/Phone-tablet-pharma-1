@@ -503,6 +503,12 @@ export const CreateOfferModal: React.FC<CreateOfferModalProps> = ({
             </label>
           </div>
 
+          {/* Platform Moderation & Social Publishing Info */}
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <span className="text-emerald-500 font-bold">ℹ️ معلومة:</span>
+            <span>يُنشر عرضك فوراً في المنصة، وتتولى الإدارة مراجعة المنشورات وجدولتها في قنوات التواصل الاجتماعي الرسمية بحسب أولوية السوق.</span>
+          </div>
+
           <div className="pt-2 flex gap-3">
             <button
               type="button"
@@ -949,6 +955,12 @@ export const CreateRequestModal: React.FC<CreateRequestModalProps> = ({
                 أقر بصحة احتياجي للصنف المذكور، وأتعهد بالدخول للمنصة وحذف هذا الطلب فور توفره أو إلغائه لمنع إرباك الموردين والسوق.
               </div>
             </label>
+          </div>
+
+          {/* Platform Moderation & Social Publishing Info */}
+          <div className="p-2.5 bg-slate-100 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-2">
+            <span className="text-amber-500 font-bold">ℹ️ معلومة:</span>
+            <span>يتم تسجيل طلبك فوراً في المنصة، وتتولى الإدارة مراجعة وتجميع الطلبات وجدولتها للنشر في قنوات التواصل الاجتماعي بحسب الأولوية ودرجة الاستعجال.</span>
           </div>
 
           <div className="pt-2 flex gap-3">

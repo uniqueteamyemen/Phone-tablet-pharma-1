@@ -7,6 +7,7 @@ import {
   PharmaCatalogDrug, 
   PharmaUserRole,
   SocialBroadcastPayload,
+  PharmaMatchTicket,
   INITIAL_NEML_CATALOG 
 } from './types/pharmayemen';
 import { 
@@ -26,6 +27,8 @@ import { PharmaHeader, PharmaTab } from './components/PharmaHeader';
 import { PharmaOverview } from './components/PharmaOverview';
 import { PharmaCatalogView } from './components/PharmaCatalogView';
 import { PharmaOffersView, PharmaRequestsView, PharmaMatchesView } from './components/PharmaViews';
+import { PharmaTicketsView } from './components/PharmaTicketsView';
+import { PharmaEntitiesView } from './components/PharmaEntitiesView';
 import { PharmaStockAlertsView } from './components/PharmaStockAlertsView';
 import { PharmaSocialBroadcastView } from './components/PharmaSocialBroadcastView';
 import { PharmaSocialBroadcastModal } from './components/PharmaSocialBroadcastModal';
@@ -37,16 +40,21 @@ import { PharmaUserManagerModal } from './components/PharmaUserManagerModal';
 import { PharmaInstallModal } from './components/PharmaInstallModal';
 import { PharmaBarcodeScannerModal } from './components/PharmaBarcodeScannerModal';
 import { PharmaMatchActionModal, MatchActionTarget } from './components/PharmaMatchActionModal';
+import { PharmaMatchChatModal } from './components/PharmaMatchChatModal';
+import { PharmaPhoneAuthModal } from './components/PharmaPhoneAuthModal';
 import { useTouchSwipe } from './hooks/useTouchSwipe';
+import { CheckCircle2, Bell, X, Sparkles, MessageCircle } from 'lucide-react';
 
-const TAB_ORDER: PharmaTab[] = ['overview', 'catalog', 'offers', 'requests', 'matches', 'alerts', 'social', 'clinical', 'about'];
+const TAB_ORDER: PharmaTab[] = ['overview', 'catalog', 'offers', 'requests', 'matches', 'tickets', 'entities', 'alerts', 'social', 'clinical', 'about'];
+
+const STORAGE_KEY_TICKETS = 'pharmayemen_match_tickets_v1';
 
 export default function App() {
   // 1. Core Platform State & Entities
   const [entitiesList, setEntitiesList] = useState<PharmaEntity[]>(() => loadPharmaEntitiesList());
   const [entity, setEntity] = useState<PharmaEntity>(() => loadPharmaEntity());
   
-  // Improvement #1: Default to 'visitor' mode to protect sensitive entities & quantities
+  // Default to 'visitor' mode to protect sensitive entities & quantities
   const [userRole, setUserRole] = useState<PharmaUserRole>('visitor');
   const [catalog, setCatalog] = useState<PharmaCatalogDrug[]>(() => {
     try {
@@ -58,29 +66,79 @@ export default function App() {
     }
   });
 
-  const handleApproveDrugToCatalog = (newDrug: PharmaCatalogDrug) => {
-    setCatalog((prev) => [newDrug, ...prev]);
+  const [offers, setOffers] = useState<PharmaOffer[]>(() => loadPharmaOffers());
+  const [requests, setRequests] = useState<PharmaRequest[]>(() => loadPharmaRequests());
+
+  // Coordination Tickets & In-App Chat State
+  const [tickets, setTickets] = useState<PharmaMatchTicket[]>(() => {
     try {
-      const stored = localStorage.getItem('pharmayemen_approved_custom_drugs');
-      const customApproved: PharmaCatalogDrug[] = stored ? JSON.parse(stored) : [];
-      customApproved.unshift(newDrug);
-      localStorage.setItem('pharmayemen_approved_custom_drugs', JSON.stringify(customApproved));
+      const stored = localStorage.getItem(STORAGE_KEY_TICKETS);
+      if (stored) return JSON.parse(stored);
+      // Sample starter ticket
+      const sample: PharmaMatchTicket = {
+        id: 'ticket-sample-1',
+        matchId: 'match-sample-1',
+        targetType: 'offer',
+        targetItemId: 'off-1',
+        drugName: 'Augmentin 1g (Amoxicillin + Clavulanic Acid)',
+        quantity: 50,
+        unit: 'Tab',
+        governorate: 'صنعاء',
+        initiatorEntityId: 'ent-2',
+        initiatorName: 'صيدلية النور الحديثة',
+        initiatorPhone: '+967 777 123 456',
+        ownerEntityId: 'ent-1',
+        ownerName: 'مستشفى الثورة العام',
+        ownerPhone: '+967 771 987 654',
+        coordinationStatus: 'approved_open',
+        phoneExchanged: true,
+        messages: [
+          {
+            id: 'm1',
+            senderEntityId: 'ent-2',
+            senderName: 'صيدلية النور الحديثة',
+            senderRole: 'sender',
+            text: 'السلام عليكم ورحمة الله، بخصوص كمية الأوجمنتين 1g المعروضة، هل جاهزة للاستلام اليوم في صنعاء؟',
+            timestamp: '10:30 ص',
+          },
+          {
+            id: 'm2',
+            senderEntityId: 'ent-1',
+            senderName: 'مستشفى الثورة العام',
+            senderRole: 'receiver',
+            text: 'وعليكم السلام، نعم الصنف متاح ومحفوظ في درجة حرارة ملائمة، الصلاحية حتى 2026/06.',
+            timestamp: '10:35 ص',
+          },
+          {
+            id: 'm3',
+            senderEntityId: 'system',
+            senderName: 'نظام المنصة',
+            senderRole: 'admin',
+            text: '🤝 تم قبول التنسيق وتبادل أرقام الهواتف بنجاح.',
+            timestamp: '10:36 ص',
+          },
+        ],
+        lastActivityAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
+      };
+      return [sample];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_TICKETS, JSON.stringify(tickets));
     } catch (e) {
       console.error(e);
     }
-  };
-  
-  // Retain all offers & requests by default to activate market liquidity and growth (no forced auto-expiry)
-  const [autoExpiryEnabled, setAutoExpiryEnabled] = useState<boolean>(() => {
-    return localStorage.getItem('pharmayemen_auto_expiry_enabled') === 'true';
-  });
+  }, [tickets]);
 
-  const [offers, setOffers] = useState<PharmaOffer[]>(() => {
-    return loadPharmaOffers();
-  });
-  
-  const [requests, setRequests] = useState<PharmaRequest[]>(() => {
-    return loadPharmaRequests();
+  // 7-day Auto Expiry Enforcement Feature
+  const [autoExpiryEnabled, setAutoExpiryEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('pharmayemen_auto_expiry_enabled');
+    return saved !== null ? saved === 'true' : true;
   });
 
   const handleToggleAutoExpiry = () => {
@@ -104,12 +162,35 @@ export default function App() {
   const [isUserManagerOpen, setIsUserManagerOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [isPhoneAuthModalOpen, setIsPhoneAuthModalOpen] = useState(false);
+  const [phoneAuthReason, setPhoneAuthReason] = useState<string>('لإتمام هذا الإجراء بأمان');
   const [selectedDrugForAction, setSelectedDrugForAction] = useState<PharmaCatalogDrug | null>(null);
   const [scannedDrugDetails, setScannedDrugDetails] = useState<any>(null);
+
+  // Active Chat Modal State
+  const [activeChatTicket, setActiveChatTicket] = useState<PharmaMatchTicket | null>(null);
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
 
   // Social Broadcast State
   const [isSocialModalOpen, setIsSocialModalOpen] = useState(false);
   const [broadcastPayload, setBroadcastPayload] = useState<SocialBroadcastPayload | null>(null);
+
+  // Status & Notification Toast Banner
+  const [toastNotification, setToastNotification] = useState<{
+    id: string;
+    title: string;
+    message: string;
+    type: 'success' | 'amber' | 'info';
+  } | null>(null);
+
+  // Auto dismiss toast after 7 seconds
+  useEffect(() => {
+    if (!toastNotification) return;
+    const timer = setTimeout(() => {
+      setToastNotification(null);
+    }, 7000);
+    return () => clearTimeout(timer);
+  }, [toastNotification]);
 
   // Match Action (Fulfill / Reserve) Modal State
   const [isMatchActionModalOpen, setIsMatchActionModalOpen] = useState(false);
@@ -133,7 +214,7 @@ export default function App() {
     };
   }, []);
 
-  // 2. Compute dynamic market matches combined with user manual matches
+  // Compute dynamic market matches combined with user manual matches
   const matches = useMemo(() => {
     const autoMatches = calculateMarketMatches(offers, requests);
     return [...userConfirmedMatches, ...autoMatches];
@@ -188,6 +269,12 @@ export default function App() {
 
   const handleSelectEntity = (selected: PharmaEntity) => {
     setEntity(selected);
+    setToastNotification({
+      id: `toast-${Date.now()}`,
+      title: 'تم التبديل بنجاح',
+      message: `أنت تعمل الآن بهوية المنشأة: (${selected.name}) - ${selected.governorate}`,
+      type: 'success',
+    });
   };
 
   const handleSaveEntity = (updated: PharmaEntity) => {
@@ -227,54 +314,42 @@ export default function App() {
     setOffers((prev) => [newOffer, ...prev]);
     setActiveTab('offers');
 
-    // Auto-prepare social broadcast payload with protected anonymous publisher identity
-    const payload: SocialBroadcastPayload = {
-      id: `broadcast-${Date.now()}`,
-      type: 'offer',
-      drugName: newOffer.genericName || newOffer.brandName || newOffer.freeTextName || 'دواء معروض',
-      brandName: newOffer.brandName,
-      strength: newOffer.strength,
-      quantity: newOffer.quantity,
-      unit: newOffer.unit,
-      governorate: entity.governorate || 'اليمن',
-      expiryDate: newOffer.expiryDate,
-      price: newOffer.price,
-      currency: newOffer.currency,
-      notes: newOffer.notes,
-      createdAt: new Date().toISOString(),
-    };
-    setBroadcastPayload(payload);
-    setIsSocialModalOpen(true);
+    setToastNotification({
+      id: `toast-${Date.now()}`,
+      title: 'تم تسجيل ونشر العرض الدوائي بنجاح',
+      message: '🔔 ملاحظة: إشارة الفائض فعالة الآن في شبكة المنصة، وتخضع العروض للمراجعة والجدولة للنشر في قنوات ومواقع التواصل الاجتماعي التابعة للمنصة بحسب الأولوية.',
+      type: 'success',
+    });
   };
 
   const handleCloseOffer = (id: string) => {
     setOffers((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'closed' } : o)));
   };
 
-  const handleAddRequest = (newReqData: Omit<PharmaRequest, 'id' | 'createdAt'>) => {
+  const handleApproveDrugToCatalog = (newDrug: PharmaCatalogDrug) => {
+    setCatalog((prev) => {
+      const updated = [newDrug, ...prev];
+      const customOnly = updated.filter((d) => !d.id?.startsWith('neml-'));
+      localStorage.setItem('pharmayemen_approved_custom_drugs', JSON.stringify(customOnly));
+      return updated;
+    });
+  };
+
+  const handleAddRequest = (newRequestData: Omit<PharmaRequest, 'id' | 'createdAt'>) => {
     const newReq: PharmaRequest = {
-      ...newReqData,
+      ...newRequestData,
       id: `req-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
     setRequests((prev) => [newReq, ...prev]);
     setActiveTab('requests');
 
-    // Auto-prepare social broadcast payload with protected anonymous publisher identity
-    const payload: SocialBroadcastPayload = {
-      id: `broadcast-${Date.now()}`,
-      type: 'request',
-      drugName: newReq.genericName || newReq.freeTextName || 'دواء مطلوب',
-      strength: newReq.strength,
-      quantity: newReq.quantity,
-      unit: newReq.unit,
-      governorate: entity.governorate || 'اليمن',
-      urgency: newReq.urgency,
-      notes: newReq.notes,
-      createdAt: new Date().toISOString(),
-    };
-    setBroadcastPayload(payload);
-    setIsSocialModalOpen(true);
+    setToastNotification({
+      id: `toast-${Date.now()}`,
+      title: 'تم تسجيل ونشر طلب الاحتياج بنجاح',
+      message: '🔔 ملاحظة: إشارة الاحتياج فعالة الآن في شبكة المنصة، وتخضع الطلبات للمراجعة والجدولة للنشر في قنوات ومواقع التواصل الاجتماعي التابعة للمنصة بحسب الأولوية ودرجة الاستعجال.',
+      type: 'amber',
+    });
   };
 
   const handleCloseRequest = (id: string) => {
@@ -307,12 +382,42 @@ export default function App() {
 
   // Match / Fulfill Trigger
   const handleOpenMatchAction = (target: MatchActionTarget) => {
+    // If visitor, prompt for phone auth first
+    if (userRole === 'visitor' && !entity.isPhoneVerified) {
+      setPhoneAuthReason(target.type === 'offer' ? 'لحجز واستلام العرض الدوائي' : 'لتلبية احتياج الدواء');
+      setIsPhoneAuthModalOpen(true);
+      return;
+    }
     setMatchActionTarget(target);
     setIsMatchActionModalOpen(true);
   };
 
-  const handleConfirmMatch = (newMatch: PharmaMatch) => {
+  const handleConfirmMatch = (newMatch: PharmaMatch, newTicket: PharmaMatchTicket) => {
     setUserConfirmedMatches((prev) => [newMatch, ...prev]);
+    setTickets((prev) => [newTicket, ...prev]);
+  };
+
+  const handleOpenDirectChat = (ticket: PharmaMatchTicket) => {
+    setActiveChatTicket(ticket);
+    setIsChatModalOpen(true);
+  };
+
+  const handleUpdateTicket = (updated: PharmaMatchTicket) => {
+    setTickets((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+    if (activeChatTicket && activeChatTicket.id === updated.id) {
+      setActiveChatTicket(updated);
+    }
+  };
+
+  const handlePhoneAuthSuccess = (authenticatedEntity: PharmaEntity) => {
+    handleAddNewEntity(authenticatedEntity);
+    setUserRole('pharmacy');
+    setToastNotification({
+      id: `toast-${Date.now()}`,
+      title: 'تم توثيق الحساب بنجاح',
+      message: `أهلاً بك (${authenticatedEntity.name})! تم تفعيل وضع الصيدلية المعتمدة.`,
+      type: 'success',
+    });
   };
 
   return (
@@ -328,12 +433,24 @@ export default function App() {
         activeOffersCount={offers.filter((o) => o.status === 'active').length}
         openRequestsCount={requests.filter((r) => r.status === 'open').length}
         matchesCount={matches.length}
+        ticketsCount={tickets.filter((t) => t.coordinationStatus === 'approved_open' || t.coordinationStatus === 'pending_approval').length}
+        entitiesCount={entitiesList.length}
         onOpenCreateOffer={() => {
+          if (userRole === 'visitor' && !entity.isPhoneVerified) {
+            setPhoneAuthReason('لإضافة وتوثيق عرض دوائي');
+            setIsPhoneAuthModalOpen(true);
+            return;
+          }
           setSelectedDrugForAction(null);
           setScannedDrugDetails(null);
           setIsOfferModalOpen(true);
         }}
         onOpenCreateRequest={() => {
+          if (userRole === 'visitor' && !entity.isPhoneVerified) {
+            setPhoneAuthReason('لتسجيل ونشر طلب احتياج دوائي');
+            setIsPhoneAuthModalOpen(true);
+            return;
+          }
           setSelectedDrugForAction(null);
           setScannedDrugDetails(null);
           setIsRequestModalOpen(true);
@@ -344,7 +461,52 @@ export default function App() {
         onOpenGoogleAutofill={() => setIsUserManagerOpen(true)}
         onOpenSocialBroadcast={() => setActiveTab('social')}
         onOpenFAQ={() => setIsFAQModalOpen(true)}
+        onOpenPhoneAuth={() => {
+          setPhoneAuthReason('لتوثيق المنشأة بالهاتف عبر OTP');
+          setIsPhoneAuthModalOpen(true);
+        }}
       />
+
+      {/* Floating Informative Toast Notification Banner */}
+      {toastNotification && (
+        <div className="bg-slate-900 border-b border-slate-800 px-4 py-2.5 shadow-xl relative z-30 transition-all duration-300">
+          <div className="max-w-7xl mx-auto flex items-start sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                  toastNotification.type === 'success'
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                }`}
+              >
+                {toastNotification.type === 'success' ? (
+                  <CheckCircle2 className="w-4 h-4" />
+                ) : (
+                  <Bell className="w-4 h-4" />
+                )}
+              </div>
+              <div className="text-xs">
+                <p className="font-black text-white flex items-center gap-2">
+                  <span>{toastNotification.title}</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-normal">
+                    إشعار نظام
+                  </span>
+                </p>
+                <p className="text-slate-300 text-[11px] mt-0.5 leading-relaxed">
+                  {toastNotification.message}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setToastNotification(null)}
+              className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition cursor-pointer shrink-0"
+              title="إغلاق الإشعار"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area with Touch Gestures Ref */}
       <main ref={mainContainerRef as any} className="flex-1 flex flex-col overflow-hidden relative touch-pan-y">
@@ -371,6 +533,18 @@ export default function App() {
               setIsRequestModalOpen(true);
             }}
             onOpenUserManager={() => setIsUserManagerOpen(true)}
+            onSelectEntity={handleSelectEntity}
+          />
+        )}
+
+        {activeTab === 'entities' && (
+          <PharmaEntitiesView
+            entitiesList={entitiesList}
+            currentEntity={entity}
+            userRole={userRole}
+            onSelectEntity={handleSelectEntity}
+            onOpenUserManager={() => setIsUserManagerOpen(true)}
+            onAddNewEntity={handleAddNewEntity}
           />
         )}
 
@@ -428,6 +602,19 @@ export default function App() {
           />
         )}
 
+        {activeTab === 'tickets' && (
+          <PharmaTicketsView
+            tickets={tickets}
+            entity={entity}
+            userRole={userRole}
+            onOpenChat={(t) => {
+              setActiveChatTicket(t);
+              setIsChatModalOpen(true);
+            }}
+            onUpdateTicket={handleUpdateTicket}
+          />
+        )}
+
         {activeTab === 'alerts' && (
           <PharmaStockAlertsView
             entity={entity}
@@ -457,6 +644,8 @@ export default function App() {
             entity={entity}
             offers={offers}
             requests={requests}
+            userRole={userRole}
+            initialPayload={broadcastPayload}
           />
         )}
 
@@ -543,6 +732,27 @@ export default function App() {
         target={matchActionTarget}
         currentEntity={entity}
         onConfirmMatch={handleConfirmMatch}
+        onOpenDirectChat={handleOpenDirectChat}
+      />
+
+      {/* In-App Coordination Chat Modal */}
+      <PharmaMatchChatModal
+        isOpen={isChatModalOpen}
+        onClose={() => {
+          setIsChatModalOpen(false);
+          setActiveChatTicket(null);
+        }}
+        ticket={activeChatTicket}
+        currentEntity={entity}
+        onUpdateTicket={handleUpdateTicket}
+      />
+
+      {/* Phone OTP Verification Modal */}
+      <PharmaPhoneAuthModal
+        isOpen={isPhoneAuthModalOpen}
+        onClose={() => setIsPhoneAuthModalOpen(false)}
+        onSuccessAuth={handlePhoneAuthSuccess}
+        actionReason={phoneAuthReason}
       />
 
       {/* Platform FAQ & Workflow Guide Modal */}

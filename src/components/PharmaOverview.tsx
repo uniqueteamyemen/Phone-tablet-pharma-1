@@ -34,10 +34,11 @@ interface PharmaOverviewProps {
   userRole?: 'admin' | 'pharmacy' | 'visitor';
   autoExpiryEnabled?: boolean;
   onToggleAutoExpiry?: () => void;
-  onNavigateTab: (tab: 'catalog' | 'offers' | 'requests' | 'matches' | 'clinical') => void;
+  onNavigateTab: (tab: 'catalog' | 'offers' | 'requests' | 'matches' | 'clinical' | 'entities') => void;
   onOpenCreateOffer: () => void;
   onOpenCreateRequest: () => void;
   onOpenUserManager?: () => void;
+  onSelectEntity?: (entity: PharmaEntity) => void;
 }
 
 export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
@@ -53,6 +54,7 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
   onOpenCreateOffer,
   onOpenCreateRequest,
   onOpenUserManager,
+  onSelectEntity,
 }) => {
   const activeOffers = offers.filter((o) => o.status === 'active');
   const openRequests = requests.filter((r) => r.status === 'open');
@@ -66,7 +68,7 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
   const totalRegisteredEntities = entitiesList.length > 0 ? entitiesList.length : 6;
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100" dir="rtl">
       
       {/* Welcome Banner with Official Logo */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950 text-white p-5 sm:p-6 rounded-3xl shadow-lg border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-5 relative overflow-hidden">
@@ -90,30 +92,62 @@ export const PharmaOverview: React.FC<PharmaOverviewProps> = ({
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <div className="sm:hidden">
                 <PharmaLogo variant="icon" size="sm" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2 flex-wrap">
                 {userRole === 'visitor' ? (
-                  <span className="flex items-center gap-2">
+                  <>
                     <span>مرحباً بك في سوق الدواء اليمني</span>
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                      وضع الزائر (حماية الخصوصية)
+                      وضع الزائر
                     </span>
-                  </span>
+                  </>
+                ) : userRole === 'admin' ? (
+                  <>
+                    <span>لوحة تحكم المشرف العام</span>
+                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-purple-500/30 text-purple-200 border border-purple-500/40">
+                      الحساب النشط: {entity.name}
+                    </span>
+                  </>
                 ) : (
-                  `أهلاً بك، ${entity.name}`
+                  <span>أهلاً بك، {entity.name}</span>
                 )}
               </h2>
             </div>
             <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              منظومة الرصد والتوريد الصيدلاني الموحدة في اليمن. تنظيم إشارات العرض والطلب، تدوير الفائض، وتأمين الاحتياجات العلاجية العاجلة.
+              منظومة الرصد والتوريد الصيدلاني الموحدة في اليمن. تنظيم إشارات العرض والطلب، تدوير الفائض، وتأمين الاحتياجات العلاجية والتجميلية.
             </p>
+
+            {/* Quick Entity Switcher Bar for immediate access */}
+            <div className="mt-3 pt-2.5 border-t border-slate-800/80 flex items-center gap-2 flex-wrap text-xs">
+              <span className="text-slate-400 text-[11px] font-semibold">التبديل السريع للهوية:</span>
+              {entitiesList.slice(0, 4).map((entItem) => (
+                <button
+                  key={entItem.id}
+                  onClick={() => onSelectEntity && onSelectEntity(entItem)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition flex items-center gap-1 cursor-pointer border ${
+                    entItem.id === entity.id || entItem.name === entity.name
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 font-black'
+                      : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Building2 className="w-3 h-3" />
+                  <span>{entItem.name}</span>
+                </button>
+              ))}
+              <button
+                onClick={() => onNavigateTab('entities')}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-teal-950 text-teal-300 border border-teal-500/50 hover:bg-teal-900 transition flex items-center gap-1 cursor-pointer"
+              >
+                <span>كافة الجهات ({entitiesList.length}) ←</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 relative z-10 shrink-0 self-stretch sm:self-auto justify-end">
+        <div className="flex items-center gap-2.5 relative z-10 shrink-0 self-stretch sm:self-auto justify-end flex-wrap sm:flex-nowrap">
           <button
             onClick={onOpenCreateRequest}
             className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-xs"

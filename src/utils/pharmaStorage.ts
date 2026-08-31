@@ -11,15 +11,49 @@ import {
 import { getMedicineSearchMatch, rankMedicinesBySearch, normalizeMedicineSearch } from '../medicineSearch';
 import { evaluateClinicalDrugMatch } from './pharmaClinicalMatcher';
 
-const ENTITY_STORAGE_KEY = 'pharmayemen_entity_v1';
-const ENTITIES_LIST_STORAGE_KEY = 'pharmayemen_entities_list_v3';
-const OFFERS_STORAGE_KEY = 'pharmayemen_offers_v3';
-const REQUESTS_STORAGE_KEY = 'pharmayemen_requests_v3';
-const MATCHES_STORAGE_KEY = 'pharmayemen_matches_v1';
+const ENTITY_STORAGE_KEY = 'pharmayemen_entity_v2';
+const ENTITIES_LIST_STORAGE_KEY = 'pharmayemen_entities_list_v4';
+const OFFERS_STORAGE_KEY = 'pharmayemen_offers_v4';
+const REQUESTS_STORAGE_KEY = 'pharmayemen_requests_v4';
+const MATCHES_STORAGE_KEY = 'pharmayemen_matches_v2';
 const CUSTOM_DRUGS_STORAGE_KEY = 'pharmayemen_custom_drugs_v1';
 
 // Initial Demo Entities list with Trust Scores & Ratings
 export const INITIAL_ENTITIES_LIST: PharmaEntity[] = [
+  {
+    id: 'ent-106',
+    name: 'مهذب للمنتجات الطبيعية والعناية',
+    type: 'individual_supplier',
+    licenseNumber: 'YE-SAN-NAT-772',
+    governorate: 'صنعاء',
+    city: 'السبعين',
+    address: 'شارع السبعين - بالقرب من مركز العناية',
+    phone: '+967 771 234 567',
+    status: 'verified',
+    trustScore: 97,
+    successfulMatchesCount: 14,
+    rating: 4.9,
+    subscriptionPlan: 'pro',
+    createdAt: new Date().toISOString(),
+    isPhoneVerified: true,
+  },
+  {
+    id: 'ent-107',
+    name: 'سعيد - تاجر وموزع مستحضرات تجميل',
+    type: 'individual_supplier',
+    licenseNumber: 'YE-ADN-COS-309',
+    governorate: 'عدن',
+    city: 'المنصورة',
+    address: 'شارع الكثيري - المنصورة',
+    phone: '+967 733 556 778',
+    status: 'verified',
+    trustScore: 94,
+    successfulMatchesCount: 8,
+    rating: 4.8,
+    subscriptionPlan: 'pro',
+    createdAt: new Date().toISOString(),
+    isPhoneVerified: true,
+  },
   {
     id: 'ent-101',
     name: 'صيدلية النور الحديثة - صنعاء',
@@ -234,6 +268,26 @@ export const savePharmaEntity = (entity: PharmaEntity): void => {
 // Initial Demo Offers (Supply Signals including Non-Registered & Medical Devices)
 const INITIAL_OFFERS: PharmaOffer[] = [
   {
+    id: 'off-mohathab-1',
+    entityId: 'ent-106',
+    entityName: 'مهذب للمنتجات الطبيعية والعناية',
+    isFreeText: true,
+    freeTextName: 'عسل تقشير هندي أصلي لتفتيح البشرة وتجديد الخلايا',
+    brandName: 'Indian Herbal Peeling Honey (150ml)',
+    category: 'عناية جلدية وتجميل علاجي',
+    categoryType: 'skincare_cosmetics',
+    quantity: 35,
+    unit: 'علبة (Jar 150ml)',
+    price: 4800,
+    currency: 'YER',
+    expiryDate: '2028-08-30',
+    needsDelivery: true,
+    acknowledgedResponsibility: true,
+    status: 'active',
+    notes: 'مستحضر طبيعي هندي فاخر لتقشير الوجه وإزالة الكلف والتصبغات، متوفر بكميات للجملة والقطاعي.',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+  },
+  {
     id: 'off-1',
     entityId: 'ent-101',
     entityName: 'صيدلية النور الحديثة - صنعاء',
@@ -339,6 +393,24 @@ const INITIAL_OFFERS: PharmaOffer[] = [
 
 // Initial Demo Requests (Demand signals)
 const INITIAL_REQUESTS: PharmaRequest[] = [
+  {
+    id: 'req-saeed-1',
+    entityId: 'ent-107',
+    entityName: 'سعيد - تاجر وموزع مستحضرات تجميل',
+    isFreeText: true,
+    freeTextName: 'عسل تقشير أعشاب طبيعية للوجه والجسم',
+    brandName: 'Herbal Face Peeling Honey',
+    category: 'عناية جلدية وتجميل علاجي',
+    categoryType: 'skincare_cosmetics',
+    quantity: 15,
+    unit: 'علبة (Jar)',
+    urgency: 'medium',
+    needsDelivery: true,
+    acknowledgedResponsibility: true,
+    status: 'open',
+    notes: 'مطلوب كمية 15 علبة عسل تقشير طبيعي للبشرة لطلبيات زبائن في عدن.',
+    createdAt: new Date(Date.now() - 3600000 * 1).toISOString(),
+  },
   {
     id: 'req-1',
     entityId: 'ent-104',

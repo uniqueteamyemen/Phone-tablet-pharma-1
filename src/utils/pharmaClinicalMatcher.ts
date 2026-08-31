@@ -321,7 +321,15 @@ export const evaluateClinicalDrugMatch = (
   const isExactGeneric = key1 === key2;
   const isContainedGeneric = key1.length >= 4 && key2.length >= 4 && (key1.includes(key2) || key2.includes(key1));
 
-  if (!isExactGeneric && !isContainedGeneric) {
+  // Multi-word token overlap for free-text, natural herbal products, and cosmetics
+  const words1 = key1.split(/\s+/).filter((w) => w.length >= 3);
+  const words2 = key2.split(/\s+/).filter((w) => w.length >= 3);
+  const sharedWords = words1.filter((w) => words2.includes(w));
+  const hasSharedCorePhrase = 
+    (sharedWords.length >= 2 && sharedWords.join(' ').length >= 6) || 
+    (sharedWords.length >= 1 && sharedWords[0].length >= 7);
+
+  if (!isExactGeneric && !isContainedGeneric && !hasSharedCorePhrase) {
     // Different Active Ingredient -> STOPS HERE (NO MATCH)
     return null;
   }
