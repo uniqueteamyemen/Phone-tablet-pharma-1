@@ -23,7 +23,8 @@ import {
   ChevronDown,
   LogOut,
   SlidersHorizontal,
-  BellRing
+  BellRing,
+  Database
 } from 'lucide-react';
 import { PharmaEntity, PharmaUserRole } from '../types/pharmayemen';
 import { PharmaLogo } from './PharmaLogo';
@@ -51,6 +52,7 @@ interface PharmaHeaderProps {
   onOpenSocialBroadcast?: () => void;
   onOpenFAQ?: () => void;
   onOpenPhoneAuth?: () => void;
+  onOpenEventAnalytics?: () => void;
 }
 
 export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
@@ -74,6 +76,7 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
   onOpenSocialBroadcast,
   onOpenFAQ,
   onOpenPhoneAuth,
+  onOpenEventAnalytics,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
@@ -240,6 +243,19 @@ export const PharmaHeader: React.FC<PharmaHeaderProps> = ({
                   >
                     <HelpCircle className="w-4 h-4 text-amber-400" />
                     <span>دليل الاستخدام والأسئلة الشائعة</span>
+                  </button>
+                )}
+
+                {onOpenEventAnalytics && (
+                  <button
+                    onClick={() => {
+                      setToolsDropdownOpen(false);
+                      onOpenEventAnalytics();
+                    }}
+                    className="w-full px-3.5 py-2 text-xs text-teal-300 hover:bg-teal-950/50 flex items-center gap-2.5 transition text-right"
+                  >
+                    <Database className="w-4 h-4 text-teal-400" />
+                    <span>محرك جمع الأحداث والتحليلات</span>
                   </button>
                 )}
 

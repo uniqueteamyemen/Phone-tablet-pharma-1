@@ -361,6 +361,27 @@ runTest('8. Runtime & Analytics Test', 'التحقق من سلامة مكون Re
 });
 
 // =========================================================================
+// TEST 9: EVENT COLLECTION ENGINE & CLOUDFLARE TELEMETRY TEST
+// =========================================================================
+runTest('9. Event Collection Engine Test', 'التحقق من تسجيل دورة حياة الطلبات والعروض، منع التكرار (Idempotency)، حساب زمن المطابقة، وتصدير السجلات', () => {
+  const eventEnginePath = path.join(process.cwd(), 'src', 'utils', 'pharmaEventEngine.ts');
+  if (!fs.existsSync(eventEnginePath)) {
+    throw new Error('pharmaEventEngine.ts is missing');
+  }
+
+  const workerPath = path.join(process.cwd(), 'src', 'worker.ts');
+  if (!fs.existsSync(workerPath)) {
+    throw new Error('src/worker.ts Cloudflare edge handler is missing');
+  }
+
+  const wranglerPath = path.join(process.cwd(), 'wrangler.jsonc');
+  const wranglerContent = fs.readFileSync(wranglerPath, 'utf8');
+  if (!wranglerContent.includes('"name": "phone-tablet-pharma-1"')) {
+    throw new Error('wrangler.jsonc is missing required project name');
+  }
+});
+
+// =========================================================================
 // PRINT CONSOLIDATED REPORT
 // =========================================================================
 

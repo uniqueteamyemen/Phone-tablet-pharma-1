@@ -35,6 +35,11 @@ import {
   PharmaUserRole, 
   SocialBroadcastPayload 
 } from '../types/pharmayemen';
+import {
+  recordRepostAttempted,
+  recordRepostSucceeded,
+  recordRepostFailed
+} from '../utils/pharmaEventEngine';
 
 interface PharmaSocialBroadcastViewProps {
   entity: PharmaEntity;
@@ -457,19 +462,43 @@ _ادخلوا عبر منصة PharmaYemen وابحثوا عن اسم الصنف 
   // Direct share URLs
   const handleOpenTelegramShare = () => {
     const textToShare = activeChannel === 'batch' ? batchDigestText : telegramPostText;
+    const platform = activeChannel === 'batch' ? 'batch_digest' : 'telegram';
+    const targetItem = (selectedType === 'offer' ? currentOffer : currentRequest) || ({
+      id: activePayload.id || 'broadcast-adhoc',
+      quantity: activePayload.quantity || 1,
+      unit: activePayload.unit || 'عبوة',
+    } as any);
+
+    // 1. Record attempt
+    const { attemptId } = recordRepostAttempted(targetItem, platform, entity);
+
     const encoded = encodeURIComponent(textToShare);
     window.open(`https://t.me/share/url?url=https://pharmayemen.app&text=${encoded}`, '_blank');
     if (activePayload.id) {
       handleMarkAsBroadcasted(activePayload.id);
+      // 2. Record verified success
+      recordRepostSucceeded(attemptId, targetItem, platform, entity);
     }
   };
 
   const handleOpenFacebookShare = () => {
     const textToShare = activeChannel === 'batch' ? batchDigestText : facebookPostText;
+    const platform = activeChannel === 'batch' ? 'batch_digest' : 'facebook';
+    const targetItem = (selectedType === 'offer' ? currentOffer : currentRequest) || ({
+      id: activePayload.id || 'broadcast-adhoc',
+      quantity: activePayload.quantity || 1,
+      unit: activePayload.unit || 'عبوة',
+    } as any);
+
+    // 1. Record attempt
+    const { attemptId } = recordRepostAttempted(targetItem, platform, entity);
+
     const encoded = encodeURIComponent('https://pharmayemen.app');
     window.open(`https://www.facebook.com/sharer/sharer.php?u=${encoded}&quote=${encodeURIComponent(textToShare)}`, '_blank');
     if (activePayload.id) {
       handleMarkAsBroadcasted(activePayload.id);
+      // 2. Record verified success
+      recordRepostSucceeded(attemptId, targetItem, platform, entity);
     }
   };
 

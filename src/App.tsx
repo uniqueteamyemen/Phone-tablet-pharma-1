@@ -22,6 +22,17 @@ import {
   calculateMarketMatches,
   checkAndApply7DaysExpiry 
 } from './utils/pharmaStorage';
+import {
+  recordRequestCreated,
+  recordRequestCancelled,
+  recordRequestClosedUnmatched,
+  recordOfferCreated,
+  recordOfferClosed,
+  recordMatchProposed,
+  recordMatchConfirmed,
+  recordRequestExpired,
+  recordOfferExpired,
+} from './utils/pharmaEventEngine';
 
 import { PharmaHeader, PharmaTab } from './components/PharmaHeader';
 import { PharmaOverview } from './components/PharmaOverview';
@@ -42,6 +53,7 @@ import { PharmaBarcodeScannerModal } from './components/PharmaBarcodeScannerModa
 import { PharmaMatchActionModal, MatchActionTarget } from './components/PharmaMatchActionModal';
 import { PharmaMatchChatModal } from './components/PharmaMatchChatModal';
 import { PharmaPhoneAuthModal } from './components/PharmaPhoneAuthModal';
+import { PharmaEventAnalyticsModal } from './components/PharmaEventAnalyticsModal';
 import { useTouchSwipe } from './hooks/useTouchSwipe';
 import { CheckCircle2, Bell, X, Sparkles, MessageCircle } from 'lucide-react';
 
@@ -163,6 +175,7 @@ export default function App() {
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
   const [isPhoneAuthModalOpen, setIsPhoneAuthModalOpen] = useState(false);
+  const [isEventAnalyticsOpen, setIsEventAnalyticsOpen] = useState(false);
   const [phoneAuthReason, setPhoneAuthReason] = useState<string>('لإتمام هذا الإجراء بأمان');
   const [selectedDrugForAction, setSelectedDrugForAction] = useState<PharmaCatalogDrug | null>(null);
   const [scannedDrugDetails, setScannedDrugDetails] = useState<any>(null);
@@ -217,6 +230,10 @@ export default function App() {
   // Compute dynamic market matches combined with user manual matches
   const matches = useMemo(() => {
     const autoMatches = calculateMarketMatches(offers, requests);
+    // Record proposed matches idempotently into the event stream
+    autoMatches.forEach((m) => {
+      recordMatchProposed(m);
+    });
     return [...userConfirmedMatches, ...autoMatches];
   }, [offers, requests, userConfirmedMatches]);
 
@@ -311,6 +328,9 @@ export default function App() {
       id: `off-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
+    // Record offer_created event
+    recordOfferCreated(newOffer, entity);
+
     setOffers((prev) => [newOffer, ...prev]);
     setActiveTab('offers');
 
@@ -323,6 +343,10 @@ export default function App() {
   };
 
   const handleCloseOffer = (id: string) => {
+    const targetOffer = offers.find((o) => o.id === id);
+    if (targetOffer) {
+      recordOfferClosed(targetOffer, entity);
+    }
     setOffers((prev) => prev.map((o) => (o.id === id ? { ...o, status: 'closed' } : o)));
   };
 
@@ -341,6 +365,9 @@ export default function App() {
       id: `req-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
+    // Record request_created event
+    recordRequestCreated(newReq, entity);
+
     setRequests((prev) => [newReq, ...prev]);
     setActiveTab('requests');
 
@@ -353,6 +380,11 @@ export default function App() {
   };
 
   const handleCloseRequest = (id: string) => {
+    const targetReq = requests.find((r) => r.id === id);
+    if (targetReq) {
+      recordRequestClosedUnmatched(targetReq, offers, catalog, entity);
+      recordRequestCancelled(targetReq, entity);
+    }
     setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, status: 'closed' } : r)));
   };
 
@@ -393,6 +425,10 @@ export default function App() {
   };
 
   const handleConfirmMatch = (newMatch: PharmaMatch, newTicket: PharmaMatchTicket) => {
+    // Record match_confirmed with precise time-to-match calculation
+    const matchedRequest = requests.find((r) => r.id === newMatch.requestId);
+    recordMatchConfirmed(newMatch, matchedRequest?.createdAt, entity);
+
     setUserConfirmedMatches((prev) => [newMatch, ...prev]);
     setTickets((prev) => [newTicket, ...prev]);
   };
@@ -465,6 +501,7 @@ export default function App() {
           setPhoneAuthReason('لتوثيق المنشأة بالهاتف عبر OTP');
           setIsPhoneAuthModalOpen(true);
         }}
+        onOpenEventAnalytics={() => setIsEventAnalyticsOpen(true)}
       />
 
       {/* Floating Informative Toast Notification Banner */}
@@ -759,6 +796,12 @@ export default function App() {
       <PharmaFAQModal
         isOpen={isFAQModalOpen}
         onClose={() => setIsFAQModalOpen(false)}
+      />
+
+      {/* Event Collection Engine & Analytics Modal */}
+      <PharmaEventAnalyticsModal
+        isOpen={isEventAnalyticsOpen}
+        onClose={() => setIsEventAnalyticsOpen(false)}
       />
 
     </div>
