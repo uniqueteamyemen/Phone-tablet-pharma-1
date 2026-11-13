@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "test": "tsx src/utils/pharmaClinicalMatcher.test.ts && tsx src/utils/pharmaEventEngine.test.ts && tsx src/utils/fixtureSeeds.test.ts",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:fixtures": "tsx src/utils/fixtureSeeds.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",

@@ -11,6 +11,7 @@ import {
 } from '../types/pharmaEvents';
 import { PharmaRequest, PharmaOffer, PharmaMatch, PharmaEntity, PharmaCatalogDrug } from '../types/pharmayemen';
 import { evaluateClinicalDrugMatch } from './pharmaClinicalMatcher';
+import { isFixtureEvent } from './fixtureSeeds';
 
 const EVENT_STREAM_STORAGE_KEY = 'pharmayemen_events_stream_v1';
 const IDEMPOTENCY_KEYS_STORAGE_KEY = 'pharmayemen_idempotency_keys_v1';
@@ -34,6 +35,15 @@ export const loadMarketEvents = (): PharmaMarketEvent[] => {
     return [];
   }
 };
+
+/**
+ * The reader every user-facing and analytical path must use.
+ * Fixtures are provenance-tagged seeded runs; they are excluded here by construction,
+ * so no calculator can count them even by accident.
+ */
+export const loadPublicEvents = (): PharmaMarketEvent[] =>
+  loadMarketEvents().filter((event) => !isFixtureEvent(event as { metadata?: Record<string, unknown> | null }));
+
 
 /**
  * Persists event stream to storage safely
@@ -547,7 +557,7 @@ export const recordMatchConfirmed = (
  * Calculates Time-to-Match statistics grouped by drug name
  */
 export const calculateTimeToMatchStats = (events?: PharmaMarketEvent[]): TimeToMatchMetric[] => {
-  const stream = events || loadMarketEvents();
+  const stream = events || loadPublicEvents();
   const confirmedMatches = stream.filter(
     (e) => e.eventType === 'match_confirmed' && typeof e.metadata.timeToMatchSeconds === 'number'
   );
@@ -594,7 +604,7 @@ export const calculateTimeToMatchStats = (events?: PharmaMarketEvent[]): TimeToM
  * Analyzes reasons for unmatched and closed requests
  */
 export const calculateUnmatchedAnalysis = (events?: PharmaMarketEvent[]): UnmatchedAnalysisReport => {
-  const stream = events || loadMarketEvents();
+  const stream = events || loadPublicEvents();
   const unmatchedEvents = stream.filter(
     (e) => e.eventType === 'request_closed_unmatched' || e.eventType === 'request_expired'
   );
@@ -637,7 +647,7 @@ export const calculateUnmatchedAnalysis = (events?: PharmaMarketEvent[]): Unmatc
  * Analyzes social media repost metrics and confirmed success rates
  */
 export const calculateRepostMetrics = (events?: PharmaMarketEvent[]): RepostMetricsReport => {
-  const stream = events || loadMarketEvents();
+  const stream = events || loadPublicEvents();
   const attempts = stream.filter((e) => e.eventType === 'repost_attempted');
   const successes = stream.filter((e) => e.eventType === 'repost_succeeded');
   const failures = stream.filter((e) => e.eventType === 'repost_failed');
@@ -668,7 +678,7 @@ export const calculateRepostMetrics = (events?: PharmaMarketEvent[]): RepostMetr
  * Comprehensive Summary Report for Administration & Intelligence
  */
 export const generateMarketEventsSummaryReport = (): MarketEventsSummaryReport => {
-  const stream = loadMarketEvents();
+  const stream = loadPublicEvents();
   
   const eventsByType: Record<PharmaMarketEventType, number> = {
     request_created: 0,
