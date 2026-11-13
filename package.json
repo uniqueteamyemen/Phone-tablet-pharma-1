@@ -8,7 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
-    "test": "tsx src/utils/pharmaClinicalMatcher.test.ts && tsx src/utils/pharmaEventEngine.test.ts",
+    "test": "tsx src/utils/pharmaClinicalMatcher.test.ts && tsx src/utils/pharmaEventEngine.test.ts && tsx src/utils/fixtureSeeds.test.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
